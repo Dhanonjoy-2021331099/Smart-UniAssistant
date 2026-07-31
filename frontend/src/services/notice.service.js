@@ -8,8 +8,8 @@ const unwrap = (response) => {
   return response;
 };
 
-export const fetchNotices = async () => {
-  const { data } = await api.get("/api/notices");
+export const fetchNotices = async (params = {}) => {
+  const { data } = await api.get("/api/notices", { params });
   return unwrap(data);
 };
 
@@ -18,16 +18,18 @@ export const fetchNoticeById = async (noticeId) => {
   return unwrap(data);
 };
 
-export const createNotice = async (formData) => {
+export const createNotice = async (formData, onUploadProgress) => {
   const { data } = await api.post("/api/notices", formData, {
     headers: { "Content-Type": "multipart/form-data" },
+    onUploadProgress,
   });
   return unwrap(data);
 };
 
-export const updateNotice = async (noticeId, formData) => {
+export const updateNotice = async (noticeId, formData, onUploadProgress) => {
   const { data } = await api.put(`/api/notices/${noticeId}`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
+    onUploadProgress,
   });
   return unwrap(data);
 };
@@ -37,16 +39,22 @@ export const deleteNotice = async (noticeId) => {
   return unwrap(data);
 };
 
+export const togglePinNotice = async (noticeId) => {
+  const { data } = await api.patch(`/api/notices/${noticeId}/pin`);
+  return unwrap(data);
+};
+
+export const updateNoticeStatus = async (noticeId, status) => {
+  const { data } = await api.patch(`/api/notices/${noticeId}/status`, { status });
+  return unwrap(data);
+};
+
 export const getNoticeBasePath = (role) => {
   if (role === "teacher") {
     return "/teacher/notices";
   }
 
-  if (role === "cr_admin") {
-    return "/cradmin/notices";
-  }
-
-  if (role === "super_admin") {
+  if (role === "cr_admin" || role === "super_admin") {
     return "/cradmin/notices";
   }
 
@@ -54,7 +62,7 @@ export const getNoticeBasePath = (role) => {
 };
 
 export const canManageNotices = (role) =>
-  role === "cr_admin" || role === "super_admin";
+  role === "cr_admin" || role === "super_admin" || role === "teacher";
 
 export const canEditNotice = (user, notice) => {
   if (!user || !notice) {
@@ -65,7 +73,7 @@ export const canEditNotice = (user, notice) => {
     return true;
   }
 
-  if (user.role === "cr_admin") {
+  if (user.role === "cr_admin" || user.role === "teacher") {
     const creatorId = notice.createdBy?._id || notice.createdBy;
     return creatorId?.toString() === user.id?.toString() ||
       creatorId?.toString() === user._id?.toString();
@@ -73,3 +81,6 @@ export const canEditNotice = (user, notice) => {
 
   return false;
 };
+
+export const isExpiredNotice = (notice) =>
+  Boolean(notice?.expiryDate && new Date(notice.expiryDate) < new Date());

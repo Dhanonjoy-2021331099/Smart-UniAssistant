@@ -169,16 +169,6 @@ export const manageRoutine = async (routineData) => {
   return data;
 };
 
-export const getNotifications = async () => {
-  const { data } = await api.get("/api/notifications");
-  return data;
-};
-
-export const markNotificationAsRead = async (notificationId) => {
-  const { data } = await api.put(`/api/notifications/${notificationId}/read`);
-  return data;
-};
-
 export const getCourses = async (params) => {
   const { data } = await api.get("/api/courses", { params });
   return data;

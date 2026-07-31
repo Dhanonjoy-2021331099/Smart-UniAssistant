@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Bell, Moon, Sun, User } from 'lucide-react';
+import { Moon, Sun, User } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
-import { getNotifications } from '../../services/api';
+import NotificationsMenu from './NotificationsMenu';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import {
   DropdownMenu,
@@ -12,25 +11,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { Badge } from '../ui/badge';
 
 const Header = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
-
-  const fetchNotifications = async () => {
-    try {
-      const data = await getNotifications();
-      setUnreadCount(data.unreadCount || 0);
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
-    }
-  };
 
   const getInitials = (name) => {
     return name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
@@ -54,19 +38,7 @@ const Header = () => {
             {theme === 'dark' ? <Sun className="w-5 h-5 text-gray-400" /> : <Moon className="w-5 h-5 text-gray-600" />}
           </button>
 
-          <div className="relative">
-            <button
-              data-testid="notifications-button"
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative"
-            >
-              <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-              {unreadCount > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs" data-testid="notification-badge">
-                  {unreadCount}
-                </Badge>
-              )}
-            </button>
-          </div>
+          <NotificationsMenu user={user} />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

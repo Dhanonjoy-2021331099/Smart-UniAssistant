@@ -1,12 +1,25 @@
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "../../lib/utils";
 
 const DialogContext = createContext(null);
 
-export function Dialog({ children }) {
-  const [open, setOpen] = useState(false);
-  const value = useMemo(() => ({ open, setOpen }), [open]);
+export function Dialog({ children, open: controlledOpen, onOpenChange }) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+
+  const setOpen = useCallback(
+    (nextOpen) => {
+      if (!isControlled) {
+        setInternalOpen(nextOpen);
+      }
+      onOpenChange?.(nextOpen);
+    },
+    [isControlled, onOpenChange],
+  );
+
+  const value = useMemo(() => ({ open, setOpen }), [open, setOpen]);
 
   return (
     <DialogContext.Provider value={value}>{children}</DialogContext.Provider>
@@ -30,7 +43,7 @@ export function DialogTrigger({ asChild = false, children }) {
   return <button onClick={handleClick}>{children}</button>;
 }
 
-export function DialogContent({ className, children }) {
+export function DialogContent({ className, children, onInteractOutside }) {
   const context = useContext(DialogContext);
 
   if (!context?.open) return null;
@@ -39,7 +52,10 @@ export function DialogContent({ className, children }) {
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       role="presentation"
-      onClick={() => context.setOpen(false)}
+      onClick={() => {
+        onInteractOutside?.();
+        context.setOpen(false);
+      }}
     >
       <div
         className={cn(

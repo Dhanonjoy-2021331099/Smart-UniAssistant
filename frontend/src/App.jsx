@@ -16,8 +16,11 @@ import Register from "./pages/Register";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import StudentAssignments from "./pages/student/StudentAssignments";
 import StudentResults from "./pages/student/StudentResults";
+import StudentNotices from "./pages/student/StudentNotices";
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import CRAdminDashboard from "./pages/cradmin/CRAdminDashboard";
+import ManageNotices from "./pages/notices/ManageNotices";
+import NoticeDetails from "./pages/notices/NoticeDetails";
 import ComingSoon from "./pages/ComingSoon";
 import "./App.css";
 
@@ -73,8 +76,9 @@ function App() {
                 />
                 <Route
                   path="notices"
-                  element={<ComingSoon title="Notices" />}
+                  element={<StudentNotices />}
                 />
+                <Route path="notices/:id" element={<NoticeDetails />} />
                 <Route path="events" element={<ComingSoon title="Events" />} />
                 <Route
                   path="settings"
@@ -109,8 +113,9 @@ function App() {
                 />
                 <Route
                   path="notices"
-                  element={<ComingSoon title="Notices" />}
+                  element={<ManageNotices />}
                 />
+                <Route path="notices/:id" element={<NoticeDetails />} />
                 <Route
                   path="settings"
                   element={<ComingSoon title="Settings" />}
@@ -128,8 +133,9 @@ function App() {
                 <Route path="dashboard" element={<CRAdminDashboard />} />
                 <Route
                   path="notices"
-                  element={<ComingSoon title="Manage Notices" />}
+                  element={<ManageNotices />}
                 />
+                <Route path="notices/:id" element={<NoticeDetails />} />
                 <Route
                   path="events"
                   element={<ComingSoon title="Manage Events" />}
