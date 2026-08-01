@@ -7,6 +7,8 @@ import {
   getNoticeById,
   updateNoticeRecord,
   deleteNoticeRecord,
+  toggleNoticePin,
+  changeNoticeStatus,
 } from "../services/notice.service.js";
 
 const handleNoticeError = (res, error, context) => {
@@ -22,9 +24,23 @@ const handleNoticeError = (res, error, context) => {
   return sendError(res, 500, mappedError.message || "Internal server error");
 };
 
+const collectUploadedFiles = (req) => {
+  const files = req.files ? Object.values(req.files).flat() : [];
+
+  if (req.file) {
+    files.push(req.file);
+  }
+
+  return files;
+};
+
 export const createNotice = async (req, res) => {
   try {
-    const notice = await createNoticeRecord(req.user, req.body, req.file);
+    const notice = await createNoticeRecord(
+      req.user,
+      req.body,
+      collectUploadedFiles(req),
+    );
 
     return sendSuccess(res, 201, "Notice created successfully", notice);
   } catch (error) {
@@ -34,9 +50,9 @@ export const createNotice = async (req, res) => {
 
 export const getNotices = async (req, res) => {
   try {
-    const notices = await listNotices();
+    const result = await listNotices(req.user, req.query);
 
-    return sendSuccess(res, 200, "Notices retrieved successfully", notices);
+    return sendSuccess(res, 200, "Notices retrieved successfully", result);
   } catch (error) {
     return handleNoticeError(res, error, "Get notices error");
   }
@@ -44,7 +60,7 @@ export const getNotices = async (req, res) => {
 
 export const getNotice = async (req, res) => {
   try {
-    const notice = await getNoticeById(req.params.id);
+    const notice = await getNoticeById(req.user, req.params.id);
 
     return sendSuccess(res, 200, "Notice retrieved successfully", notice);
   } catch (error) {
@@ -58,7 +74,7 @@ export const updateNotice = async (req, res) => {
       req.user,
       req.params.id,
       req.body,
-      req.file,
+      collectUploadedFiles(req),
     );
 
     return sendSuccess(res, 200, "Notice updated successfully", notice);
@@ -77,10 +93,46 @@ export const deleteNotice = async (req, res) => {
   }
 };
 
+export const togglePin = async (req, res) => {
+  try {
+    const notice = await toggleNoticePin(req.user, req.params.id);
+
+    return sendSuccess(
+      res,
+      200,
+      notice.isPinned ? "Notice pinned successfully" : "Notice unpinned successfully",
+      notice,
+    );
+  } catch (error) {
+    return handleNoticeError(res, error, "Toggle pin error");
+  }
+};
+
+export const updateStatus = async (req, res) => {
+  try {
+    const notice = await changeNoticeStatus(
+      req.user,
+      req.params.id,
+      req.body?.status,
+    );
+
+    return sendSuccess(
+      res,
+      200,
+      `Notice ${notice.status} successfully`,
+      notice,
+    );
+  } catch (error) {
+    return handleNoticeError(res, error, "Update status error");
+  }
+};
+
 export default {
   createNotice,
   getNotices,
   getNotice,
   updateNotice,
   deleteNotice,
+  togglePin,
+  updateStatus,
 };

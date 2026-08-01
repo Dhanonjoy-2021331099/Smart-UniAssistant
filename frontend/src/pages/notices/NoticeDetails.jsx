@@ -78,8 +78,7 @@ const NoticeDetails = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ formData, onUploadProgress }) =>
-      updateNotice(id, formData, onUploadProgress),
+    mutationFn: (formData) => updateNotice(id, formData),
     onSuccess: () => {
       toast.success("Notice updated successfully");
       setModalOpen(false);
@@ -90,11 +89,8 @@ const NoticeDetails = () => {
       toast.error(err.response?.data?.error || "Failed to update notice"),
   });
 
-  const handleFormSubmit = (formData, callbacks) => {
-    updateMutation.mutate({
-      formData,
-      onUploadProgress: callbacks?.onUploadProgress,
-    });
+  const handleFormSubmit = (formData) => {
+    updateMutation.mutate(formData);
   };
 
   if (loading) {

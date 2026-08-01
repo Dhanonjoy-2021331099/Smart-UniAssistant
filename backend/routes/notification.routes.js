@@ -7,7 +7,7 @@ const router = express.Router();
 router.use(authenticate);
 
 router.get('/', getMyNotifications);
-router.put('/:notificationId/read', markAsRead);
-router.put('/read-all', markAllAsRead);
+router.patch('/read-all', markAllAsRead);
+router.patch('/:notificationId/read', markAsRead);
 
 export default router;

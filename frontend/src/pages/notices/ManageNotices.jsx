@@ -149,10 +149,8 @@ const ManageNotices = () => {
     queryClient.invalidateQueries({ queryKey: ["manage-notices"] });
 
   const saveMutation = useMutation({
-    mutationFn: ({ noticeId, formData, onUploadProgress }) =>
-      noticeId
-        ? updateNotice(noticeId, formData, onUploadProgress)
-        : createNotice(formData, onUploadProgress),
+    mutationFn: ({ noticeId, formData }) =>
+      noticeId ? updateNotice(noticeId, formData) : createNotice(formData),
     onSuccess: (_result, variables) => {
       toast.success(
         variables.noticeId ? "Notice updated successfully" : "Notice created successfully",
@@ -216,11 +214,10 @@ const ManageNotices = () => {
     setModalOpen(true);
   };
 
-  const handleFormSubmit = (formData, callbacks) => {
+  const handleFormSubmit = (formData) => {
     saveMutation.mutate({
       noticeId: editingNotice?._id,
       formData,
-      onUploadProgress: callbacks?.onUploadProgress,
     });
   };
 

@@ -18,7 +18,11 @@ export const requireStudent = requireRole("student");
 export const requireTeacher = requireRole("teacher");
 export const requireCRAdmin = requireRole("cr_admin");
 export const requireSuperAdmin = requireRole("super_admin");
-export const requireNoticeManager = requireRole("super_admin", "cr_admin");
+export const requireNoticeManager = requireRole(
+  "super_admin",
+  "cr_admin",
+  "teacher",
+);
 export const requireNoticeViewer = requireRole(
   "student",
   "teacher",

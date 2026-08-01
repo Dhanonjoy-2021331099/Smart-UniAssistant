@@ -2,7 +2,10 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import dotenv from "dotenv";
+import { createServer } from "http";
 import connectDB from "./config/db.js";
+import { initSocket } from "./config/socket.js";
+import { LOCAL_UPLOAD_DIR } from "./config/storage.js";
 
 import authRoutes from "./routes/auth.routes.js";
 import studentRoutes from "./routes/student.routes.js";
@@ -24,6 +27,7 @@ import batchRoutes from "./routes/batch.routes.js";
 dotenv.config();
 
 const app = express();
+const httpServer = createServer(app);
 const PORT = process.env.PORT || 8001;
 const allowedOrigins = (process.env.CORS_ORIGINS || "")
   .split(",")
@@ -46,6 +50,12 @@ app.use(
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(morgan("dev"));
+
+// Local file uploads (fallback storage)
+app.use(
+  "/uploads",
+  express.static(LOCAL_UPLOAD_DIR, { fallthrough: false }),
+);
 
 // Health Check
 app.get("/", (req, res) => {
@@ -104,7 +114,9 @@ async function startServer() {
   try {
     await connectDB();
 
-    app.listen(PORT, "0.0.0.0", () => {
+    initSocket(httpServer);
+
+    httpServer.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
     });
   } catch (error) {

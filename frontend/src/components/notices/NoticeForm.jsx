@@ -1,18 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Pin } from "lucide-react";
-import { toast } from "sonner";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
-import { Progress } from "../ui/progress";
 import DatePicker from "./DatePicker";
-import AttachmentUploader from "./AttachmentUploader";
 import { CATEGORIES, PRIORITIES } from "./noticeMeta";
-import {
-  MAX_ATTACHMENT_COUNT,
-  prepareAttachmentFiles,
-} from "../../utils/fileUpload";
 
 const selectClassName =
   "flex h-10 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500";
@@ -42,26 +35,11 @@ const toISODate = (value) => {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 };
 
-const normalizeExistingAttachments = (initialValues) => {
-  if (Array.isArray(initialValues.attachments) && initialValues.attachments.length > 0) {
-    return initialValues.attachments;
-  }
-
-  if (initialValues.attachment) {
-    return [initialValues.attachment];
-  }
-
-  return [];
-};
-
 const NoticeForm = ({
   initialValues = {},
   onSubmit,
   loading = false,
 }) => {
-  const existing = normalizeExistingAttachments(initialValues);
-  const [removedExisting, setRemovedExisting] = useState(() => new Set());
-
   const [formData, setFormData] = useState({
     title: initialValues.title || "",
     description: initialValues.description || "",
@@ -72,32 +50,11 @@ const NoticeForm = ({
     expiryDate: toInputDate(initialValues.expiryDate),
     isPinned: Boolean(initialValues.isPinned),
   });
-  const [newFiles, setNewFiles] = useState([]);
   const [errors, setErrors] = useState({});
-  const [progress, setProgress] = useState(0);
-  const [preparing, setPreparing] = useState(false);
-  const mountedRef = useRef(true);
-
-  useEffect(
-    () => () => {
-      mountedRef.current = false;
-    },
-    [],
-  );
-
-  const isBusy = loading || preparing;
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: undefined }));
-  };
-
-  const handleRemoveExisting = (index) => {
-    setRemovedExisting((prev) => {
-      const next = new Set(prev);
-      next.add(index);
-      return next;
-    });
   };
 
   const validate = () => {
@@ -119,15 +76,11 @@ const NoticeForm = ({
       nextErrors.expiryDate = "Expiry date cannot be before publish date";
     }
 
-    if (existing.length + newFiles.length > MAX_ATTACHMENT_COUNT) {
-      nextErrors.attachments = `You can attach up to ${MAX_ATTACHMENT_COUNT} files.`;
-    }
-
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
 
-  const buildPayload = (status, preparedFiles) => {
+  const buildPayload = (status) => {
     const payload = new FormData();
     payload.append("title", formData.title.trim());
     payload.append("description", formData.description.trim());
@@ -147,71 +100,10 @@ const NoticeForm = ({
       payload.append("expiryDate", expiryDate);
     }
 
-    preparedFiles.forEach((file) => {
-      payload.append("attachments", file);
-    });
-
-    const keptIndexes = existing
-      .map((_, index) => index)
-      .filter((index) => !removedExisting.has(index));
-
-    payload.append("existingAttachments", JSON.stringify(keptIndexes));
-
     return payload;
   };
 
-  const handleSubmit = async (event, status) => {
-    event.preventDefault();
-
-    if (!validate()) {
-      return;
-    }
-
-    setProgress(0);
-    setPreparing(true);
-
-    try {
-      const preparedFiles = await prepareAttachmentFiles(newFiles, (value) => {
-        if (mountedRef.current) {
-          setProgress(Math.round(value * 0.3));
-        }
-      });
-
-      if (!mountedRef.current) {
-        return;
-      }
-
-      setPreparing(false);
-
-      onSubmit(buildPayload(status, preparedFiles), {
-        onUploadProgress: (progressEvent) => {
-          if (!mountedRef.current) {
-            return;
-          }
-
-          const uploadPercent = progressEvent.total
-            ? Math.round((progressEvent.loaded / progressEvent.total) * 100)
-            : 100;
-
-          setProgress(Math.round(30 + uploadPercent * 0.7));
-        },
-      });
-    } catch {
-      setPreparing(false);
-      setProgress(0);
-      toast.error("Failed to prepare attachments. Please try again.");
-    }
-  };
-
   const primaryButtonLabel = () => {
-    if (preparing) {
-      return "Preparing files...";
-    }
-
-    if (loading && progress > 0 && progress < 100) {
-      return `Uploading ${progress}%`;
-    }
-
     if (loading) {
       return initialValues._id ? "Saving..." : "Publishing...";
     }
@@ -219,15 +111,15 @@ const NoticeForm = ({
     return initialValues._id ? "Save Changes" : "Publish";
   };
 
-  const draftButtonLabel = () => {
-    if (isBusy) {
-      return preparing ? "Preparing files..." : "Saving...";
+  const handleSubmit = (event, status) => {
+    event.preventDefault();
+
+    if (!validate()) {
+      return;
     }
 
-    return initialValues.status === "draft" ? "Update Draft" : "Save as Draft";
+    onSubmit(buildPayload(status));
   };
-
-  const showProgress = isBusy && (preparing || progress > 0);
 
   return (
     <form className="space-y-5" noValidate>
@@ -238,7 +130,7 @@ const NoticeForm = ({
           value={formData.title}
           onChange={(e) => handleChange("title", e.target.value)}
           placeholder="Enter notice title"
-          disabled={isBusy}
+          disabled={loading}
         />
         {errors.title && (
           <p className="text-sm text-red-600 dark:text-red-400">{errors.title}</p>
@@ -253,7 +145,7 @@ const NoticeForm = ({
           onChange={(e) => handleChange("description", e.target.value)}
           placeholder="Write the full notice details"
           className="min-h-[140px]"
-          disabled={isBusy}
+          disabled={loading}
         />
         {errors.description && (
           <p className="text-sm text-red-600 dark:text-red-400">
@@ -270,7 +162,7 @@ const NoticeForm = ({
             value={formData.category}
             onChange={(e) => handleChange("category", e.target.value)}
             className={selectClassName}
-            disabled={isBusy}
+            disabled={loading}
           >
             {CATEGORIES.map((category) => (
               <option key={category} value={category}>
@@ -287,7 +179,7 @@ const NoticeForm = ({
             value={formData.priority}
             onChange={(e) => handleChange("priority", e.target.value)}
             className={selectClassName}
-            disabled={isBusy}
+            disabled={loading}
           >
             {PRIORITIES.map((priority) => (
               <option key={priority} value={priority}>
@@ -296,22 +188,6 @@ const NoticeForm = ({
             ))}
           </select>
         </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label>Attachments (optional)</Label>
-        <AttachmentUploader
-          files={newFiles}
-          onChange={setNewFiles}
-          existing={existing}
-          onRemoveExisting={handleRemoveExisting}
-          disabled={isBusy}
-        />
-        {errors.attachments && (
-          <p className="text-sm text-red-600 dark:text-red-400">
-            {errors.attachments}
-          </p>
-        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -349,35 +225,30 @@ const NoticeForm = ({
           checked={formData.isPinned}
           onChange={(e) => handleChange("isPinned", e.target.checked)}
           className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-          disabled={isBusy}
+          disabled={loading}
         />
         <Pin className="w-4 h-4 text-amber-500" />
         Pin this notice
       </label>
-
-      {showProgress && (
-        <div className="space-y-1.5">
-          <Progress value={progress} />
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {preparing ? "Compressing images..." : `Uploading... ${progress}%`}
-          </p>
-        </div>
-      )}
 
       <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-2">
         <Button
           type="submit"
           variant="outline"
           onClick={(e) => handleSubmit(e, "draft")}
-          disabled={isBusy}
+          disabled={loading}
         >
-          {draftButtonLabel()}
+          {loading
+            ? "Saving..."
+            : initialValues.status === "draft"
+              ? "Update Draft"
+              : "Save as Draft"}
         </Button>
         <Button
           type="submit"
           className="bg-blue-600 hover:bg-blue-700"
           onClick={(e) => handleSubmit(e, "published")}
-          disabled={isBusy}
+          disabled={loading}
         >
           {primaryButtonLabel()}
         </Button>

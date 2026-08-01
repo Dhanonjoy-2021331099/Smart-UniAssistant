@@ -18,18 +18,16 @@ export const fetchNoticeById = async (noticeId) => {
   return unwrap(data);
 };
 
-export const createNotice = async (formData, onUploadProgress) => {
+export const createNotice = async (formData) => {
   const { data } = await api.post("/api/notices", formData, {
     headers: { "Content-Type": "multipart/form-data" },
-    onUploadProgress,
   });
   return unwrap(data);
 };
 
-export const updateNotice = async (noticeId, formData, onUploadProgress) => {
+export const updateNotice = async (noticeId, formData) => {
   const { data } = await api.put(`/api/notices/${noticeId}`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
-    onUploadProgress,
   });
   return unwrap(data);
 };
