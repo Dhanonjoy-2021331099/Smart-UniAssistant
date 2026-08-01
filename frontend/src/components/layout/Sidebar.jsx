@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BookOpen, FileText, ClipboardList, Award, Bell, Calendar, Users, Settings, LogOut, GraduationCap, Upload, BarChart3, FolderOpen, HelpCircle } from 'lucide-react';
+import { Home, BookOpen, FileText, ClipboardList, Award, Bell, Calendar, Users, Settings, LogOut, GraduationCap, Upload, BarChart3, FolderOpen, HelpCircle, CalendarClock } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../lib/utils';
 
@@ -19,6 +19,7 @@ const Sidebar = () => {
         { icon: HelpCircle, label: 'Question Bank', path: '/student/questions' },
         { icon: FolderOpen, label: 'Resources', path: '/student/resources' },
         { icon: Calendar, label: 'Routine', path: '/student/routine' },
+        { icon: CalendarClock, label: 'Class Schedule', path: '/student/schedule' },
         { icon: Bell, label: 'Notices', path: '/student/notices' },
         { icon: Users, label: 'Events', path: '/student/events' },
         { icon: Settings, label: 'Settings', path: '/student/settings' }
@@ -36,6 +37,8 @@ const Sidebar = () => {
     } else if (user?.role === 'cr_admin') {
       return [
         { icon: Home, label: 'Dashboard', path: '/cradmin/dashboard' },
+        { icon: CalendarClock, label: "Tomorrow's Schedule", path: '/cradmin/schedule/tomorrow' },
+        { icon: Calendar, label: 'Base Routine', path: '/cradmin/schedule/base' },
         { icon: Bell, label: 'Manage Notices', path: '/cradmin/notices' },
         { icon: Users, label: 'Manage Events', path: '/cradmin/events' },
         { icon: Calendar, label: 'Manage Routine', path: '/cradmin/routine' },

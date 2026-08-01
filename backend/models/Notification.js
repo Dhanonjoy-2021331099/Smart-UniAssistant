@@ -4,6 +4,8 @@ const notificationSchema = new mongoose.Schema({
   title: { type: String, required: true },
   message: { type: String, required: true },
   noticeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Notice' },
+  scheduleId: { type: mongoose.Schema.Types.ObjectId, ref: 'DailySchedule' },
+  link: { type: String },
   recipientRole: {
     type: String,
     enum: ['student', 'teacher', 'cr_admin', 'super_admin'],
@@ -17,5 +19,6 @@ const notificationSchema = new mongoose.Schema({
 
 notificationSchema.index({ recipientRole: 1, recipientUID: 1, createdAt: -1 });
 notificationSchema.index({ noticeId: 1 });
+notificationSchema.index({ scheduleId: 1 });
 
 export default mongoose.model('Notification', notificationSchema);

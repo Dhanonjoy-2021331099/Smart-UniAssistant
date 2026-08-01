@@ -19,6 +19,9 @@ import StudentResults from "./pages/student/StudentResults";
 import StudentNotices from "./pages/student/StudentNotices";
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import CRAdminDashboard from "./pages/cradmin/CRAdminDashboard";
+import CRAdminBaseRoutine from "./pages/schedule/CRAdminBaseRoutine";
+import CRAdminTomorrowSchedule from "./pages/schedule/CRAdminTomorrowSchedule";
+import StudentSchedule from "./pages/student/StudentSchedule";
 import ManageNotices from "./pages/notices/ManageNotices";
 import NoticeDetails from "./pages/notices/NoticeDetails";
 import ComingSoon from "./pages/ComingSoon";
@@ -74,6 +77,7 @@ function App() {
                   path="routine"
                   element={<ComingSoon title="Routine" />}
                 />
+                <Route path="schedule" element={<StudentSchedule />} />
                 <Route
                   path="notices"
                   element={<StudentNotices />}
@@ -131,6 +135,14 @@ function App() {
                 }
               >
                 <Route path="dashboard" element={<CRAdminDashboard />} />
+                <Route
+                  path="schedule/base"
+                  element={<CRAdminBaseRoutine />}
+                />
+                <Route
+                  path="schedule/tomorrow"
+                  element={<CRAdminTomorrowSchedule />}
+                />
                 <Route
                   path="notices"
                   element={<ManageNotices />}

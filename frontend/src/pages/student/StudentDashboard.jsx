@@ -1,29 +1,148 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getStudentDashboard } from '../../services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { Progress } from '../../components/ui/progress';
-import { Award, BookOpen, ClipboardList, TrendingUp, Target, Calendar } from 'lucide-react';
+import { Award, BookOpen, ClipboardList, TrendingUp, CalendarClock, Clock, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
+import { Button } from '../../components/ui/button';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { fetchSchedules } from '../../services/schedule.service';
+import { formatTime, toDateKey, addDaysToKey, formatScheduleDate } from '../../components/schedule/scheduleMeta';
+
+const DayScheduleCard = ({ dateKey, title, fallbackText }) => {
+  const navigate = useNavigate();
+  const [schedule, setSchedule] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchSchedules({ date: dateKey, status: 'published', limit: 1 })
+      .then((data) => {
+        if (!cancelled) {
+          setSchedule(data?.schedules?.[0] || null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSchedule(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dateKey]);
+
+  const classes = schedule ? schedule.classes || [] : [];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>
+          {schedule ? formatScheduleDate(schedule.date) : fallbackText}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="h-12 rounded-lg bg-gray-100 dark:bg-gray-800 animate-pulse" />
+            ))}
+          </div>
+        ) : classes.length > 0 ? (
+          <div className="space-y-2">
+            {[...classes]
+              .sort((a, b) => `${a.startTime}`.localeCompare(`${b.startTime}`))
+              .slice(0, 5)
+              .map((entry, index) => (
+                <div
+                  key={entry._id || `${entry.section}-${entry.startTime}-${index}`}
+                  className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <CalendarClock className="w-4 h-4 text-blue-600 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-900 dark:text-white truncate">{entry.courseName}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{entry.courseCode}</p>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white flex items-center justify-end"><Clock className="w-3 h-3 mr-1" />{formatTime(entry.startTime)}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center justify-end">
+                      {entry.classMode === 'Online' ? (
+                        <>{entry.meetingPlatform || 'Online'}</>
+                      ) : (
+                        <><MapPin className="w-3 h-3 mr-1" />{entry.room}</>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            <Button
+              variant="outline"
+              className="w-full mt-2"
+              onClick={() => navigate('/student/schedule')}
+            >
+              View All
+            </Button>
+          </div>
+        ) : (
+          <div className="text-center py-6">
+            <CalendarClock className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              {fallbackText}
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/student/schedule')}
+            >
+              View All
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
 const StudentDashboard = () => {
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchDashboard();
-  }, []);
+  const todayKey = toDateKey(new Date());
+  const tomorrowKey = addDaysToKey(todayKey, 1);
 
-  const fetchDashboard = async () => {
-    try {
-      const data = await getStudentDashboard();
-      setDashboard(data);
-    } catch (error) {
-      toast.error('Failed to load dashboard');
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    let cancelled = false;
+
+    getStudentDashboard()
+      .then((data) => {
+        if (!cancelled) {
+          setDashboard(data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          toast.error('Failed to load dashboard');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (loading) {
     return <div className="flex justify-center items-center h-64" data-testid="loading-spinner"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;
@@ -62,6 +181,18 @@ const StudentDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <DayScheduleCard
+          dateKey={todayKey}
+          title="Today's Classes"
+          fallbackText="No schedule published for today yet."
+        />
+
+        <DayScheduleCard
+          dateKey={tomorrowKey}
+          title="Tomorrow's Classes"
+          fallbackText="No schedule published for tomorrow yet."
+        />
+
         <Card>
           <CardHeader>
             <CardTitle>CGPA Progress</CardTitle>
