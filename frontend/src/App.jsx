@@ -1,4 +1,3 @@
-import React from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -8,12 +7,15 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "./components/ui/sonner";
 import { AuthProvider } from "./context/AuthContext";
+import { StudentProfileProvider } from "./context/StudentProfileContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import StudentDashboard from "./pages/student/StudentDashboard";
+import StudentProfile from "./pages/student/StudentProfile";
+import StudentCourses from "./pages/student/StudentCourses";
 import StudentAssignments from "./pages/student/StudentAssignments";
 import StudentResults from "./pages/student/StudentResults";
 import StudentNotices from "./pages/student/StudentNotices";
@@ -41,54 +43,53 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <Router>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+          <StudentProfileProvider>
+            <Router>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
 
-              <Route
-                path="/student"
-                element={
-                  <ProtectedRoute allowedRoles={["student"]}>
-                    <DashboardLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route path="dashboard" element={<StudentDashboard />} />
                 <Route
-                  path="courses"
-                  element={<ComingSoon title="Courses" />}
-                />
-                <Route path="assignments" element={<StudentAssignments />} />
-                <Route path="results" element={<StudentResults />} />
-                <Route
-                  path="materials"
-                  element={<ComingSoon title="Course Materials" />}
-                />
-                <Route
-                  path="questions"
-                  element={<ComingSoon title="Question Bank" />}
-                />
-                <Route
-                  path="resources"
-                  element={<ComingSoon title="Resources" />}
-                />
-                <Route
-                  path="routine"
-                  element={<ComingSoon title="Routine" />}
-                />
-                <Route path="schedule" element={<StudentSchedule />} />
-                <Route
-                  path="notices"
-                  element={<StudentNotices />}
-                />
-                <Route path="notices/:id" element={<NoticeDetails />} />
-                <Route path="events" element={<ComingSoon title="Events" />} />
-                <Route
-                  path="settings"
-                  element={<ComingSoon title="Settings" />}
-                />
-              </Route>
+                  path="/student"
+                  element={
+                    <ProtectedRoute allowedRoles={["student"]}>
+                      <DashboardLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route path="dashboard" element={<StudentDashboard />} />
+                  <Route path="profile" element={<StudentProfile />} />
+                  <Route path="courses" element={<StudentCourses />} />
+                  <Route path="assignments" element={<StudentAssignments />} />
+                  <Route path="results" element={<StudentResults />} />
+                  <Route
+                    path="materials"
+                    element={<ComingSoon title="Course Materials" />}
+                  />
+                  <Route
+                    path="questions"
+                    element={<ComingSoon title="Question Bank" />}
+                  />
+                  <Route
+                    path="resources"
+                    element={<ComingSoon title="Resources" />}
+                  />
+                  <Route
+                    path="routine"
+                    element={<ComingSoon title="Routine" />}
+                  />
+                  <Route path="schedule" element={<StudentSchedule />} />
+                  <Route
+                    path="notices"
+                    element={<StudentNotices />}
+                  />
+                  <Route path="notices/:id" element={<NoticeDetails />} />
+                  <Route path="events" element={<ComingSoon title="Events" />} />
+                  <Route
+                    path="settings"
+                    element={<ComingSoon title="Settings" />}
+                  />
+                </Route>
 
               <Route
                 path="/teacher"
@@ -171,6 +172,7 @@ function App() {
             </Routes>
           </Router>
           <Toaster position="top-right" />
+          </StudentProfileProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

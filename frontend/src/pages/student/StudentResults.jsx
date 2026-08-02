@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getStudentResults } from '../../services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { Badge } from '../../components/ui/badge';
-import { Award, TrendingUp } from 'lucide-react';
+import { Award } from 'lucide-react';
 import { toast } from 'sonner';
 
 const StudentResults = () => {
@@ -11,19 +11,29 @@ const StudentResults = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchResults();
-  }, []);
+    let cancelled = false;
 
-  const fetchResults = async () => {
-    try {
-      const data = await getStudentResults();
-      setResults(data);
-    } catch (error) {
-      toast.error('Failed to load results');
-    } finally {
-      setLoading(false);
-    }
-  };
+    getStudentResults()
+      .then((data) => {
+        if (!cancelled) {
+          setResults(data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          toast.error('Failed to load results');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const getGradeColor = (grade) => {
     if (['A+', 'A'].includes(grade)) return 'bg-green-500';

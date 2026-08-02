@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getStudentDashboard } from '../../services/api';
+import { useStudentProfile } from '../../context/StudentProfileContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Award, BookOpen, ClipboardList, TrendingUp, CalendarClock, Clock, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
@@ -115,6 +116,7 @@ const DayScheduleCard = ({ dateKey, title, fallbackText }) => {
 const StudentDashboard = () => {
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { profile, semesterLabel } = useStudentProfile();
 
   const todayKey = toDateKey(new Date());
   const tomorrowKey = addDaysToKey(todayKey, 1);
@@ -149,10 +151,10 @@ const StudentDashboard = () => {
   }
 
   const stats = [
-    { icon: Award, label: 'CGPA', value: dashboard?.stats?.overallCGPA?.toFixed(2) || '0.00', color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' },
-    { icon: BookOpen, label: 'Credits Completed', value: dashboard?.stats?.totalCredits || 0, color: 'text-green-600 bg-green-50 dark:bg-green-900/20' },
+    { icon: Award, label: 'CGPA', value: Number(profile?.performance?.cgpa || 0).toFixed(2), color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' },
+    { icon: BookOpen, label: 'Credits Completed', value: profile?.performance?.completedCredits || 0, color: 'text-green-600 bg-green-50 dark:bg-green-900/20' },
     { icon: ClipboardList, label: 'Pending Assignments', value: dashboard?.assignments?.length || 0, color: 'text-orange-600 bg-orange-50 dark:bg-orange-900/20' },
-    { icon: TrendingUp, label: 'Current Semester', value: dashboard?.stats?.currentSemester || 1, color: 'text-purple-600 bg-purple-50 dark:bg-purple-900/20' }
+    { icon: TrendingUp, label: 'Current Semester', value: semesterLabel, color: 'text-purple-600 bg-purple-50 dark:bg-purple-900/20' }
   ];
 
   return (

@@ -1,14 +1,15 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
-import { auth } from '../config/firebase';
-import { loginUser, googleLoginUser, getProfile } from '../services/api';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useState, useEffect, useContext } from "react";
+import { signOut as firebaseSignOut } from "firebase/auth";
+import { auth } from "../config/firebase";
+import { loginUser, googleLoginUser, getProfile } from "../services/api";
 
 const AuthContext = createContext();
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+    throw new Error("useAuth must be used within AuthProvider");
   }
   return context;
 };
@@ -17,55 +18,81 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState(localStorage.getItem("token"));
 
   useEffect(() => {
-    if (token) {
-      fetchProfile();
-    } else {
-      setLoading(false);
-    }
-  }, [token]);
+    let cancelled = false;
 
-  const fetchProfile = async () => {
-    try {
+    const resolveSession = async () => {
+      if (!token) {
+        return false;
+      }
+
       const data = await getProfile();
       setUser(data.user);
       setProfile(data);
-    } catch (error) {
-      console.error('Profile fetch error:', error);
-      localStorage.removeItem('token');
-      setToken(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return true;
+    };
+
+    resolveSession()
+      .then((hasToken) => {
+        if (!cancelled && !hasToken) {
+          setLoading(false);
+        }
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+        console.error("Profile fetch error:", error);
+        localStorage.removeItem("token");
+        setToken(null);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   const login = async (email, password) => {
     const data = await loginUser(email, password);
-    localStorage.setItem('token', data.token);
+    localStorage.setItem("token", data.token);
     setToken(data.token);
     setUser(data.user);
-    await fetchProfile();
+    await refreshProfile();
     return data;
   };
 
   const googleLogin = async (idToken) => {
     const data = await googleLoginUser(idToken);
-    localStorage.setItem('token', data.token);
+    localStorage.setItem("token", data.token);
     setToken(data.token);
     setUser(data.user);
-    await fetchProfile();
+    await refreshProfile();
+    return data;
+  };
+
+  const refreshProfile = async () => {
+    const data = await getProfile();
+    setUser(data.user);
+    setProfile(data);
     return data;
   };
 
   const logout = async () => {
     try {
-      if (auth) await firebaseSignOut(auth);
+      if (auth) {
+        await firebaseSignOut(auth);
+      }
     } catch (error) {
-      console.error('Firebase signout error:', error);
+      console.error("Firebase signout error:", error);
     }
-    localStorage.removeItem('token');
+    localStorage.removeItem("token");
     setToken(null);
     setUser(null);
     setProfile(null);
@@ -78,8 +105,9 @@ export const AuthProvider = ({ children }) => {
     login,
     googleLogin,
     logout,
+    refreshProfile,
     isAuthenticated: !!token,
-    token
+    token,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -148,7 +148,7 @@ const NotificationsMenu = ({ user }) => {
         data-testid="notifications-button"
         aria-label={`Notifications${unreadCount ? ` (${unreadCount} unread)` : ""}`}
         aria-expanded={open}
-        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative"
+        className="h-10 w-10 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative"
       >
         <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
         {unreadCount > 0 && (

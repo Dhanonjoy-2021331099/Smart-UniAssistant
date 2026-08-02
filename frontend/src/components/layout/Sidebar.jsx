@@ -1,7 +1,7 @@
-import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BookOpen, FileText, ClipboardList, Award, Bell, Calendar, Users, Settings, LogOut, GraduationCap, Upload, BarChart3, FolderOpen, HelpCircle, CalendarClock } from 'lucide-react';
+import { Home, BookOpen, FileText, ClipboardList, Award, Bell, Calendar, Users, Settings, LogOut, GraduationCap, Upload, BarChart3, FolderOpen, HelpCircle, CalendarClock, UserCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { getDashboardPath } from '../../utils/navigation';
 import { cn } from '../../lib/utils';
 
 const Sidebar = () => {
@@ -12,6 +12,7 @@ const Sidebar = () => {
     if (user?.role === 'student') {
       return [
         { icon: Home, label: 'Dashboard', path: '/student/dashboard' },
+        { icon: UserCircle, label: 'Profile', path: '/student/profile' },
         { icon: BookOpen, label: 'Courses', path: '/student/courses' },
         { icon: ClipboardList, label: 'Assignments', path: '/student/assignments' },
         { icon: Award, label: 'Results', path: '/student/results' },
@@ -54,7 +55,7 @@ const Sidebar = () => {
   return (
     <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 h-screen sticky top-0 flex flex-col" data-testid="sidebar">
       <div className="p-6 border-b border-gray-200 dark:border-gray-800">
-        <Link to="/" className="flex items-center space-x-2" data-testid="logo-link">
+        <Link to={getDashboardPath(user?.role)} className="flex items-center space-x-2" data-testid="logo-link">
           <GraduationCap className="w-8 h-8 text-blue-600" />
           <div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Smart UniAssistant</h1>
@@ -66,7 +67,9 @@ const Sidebar = () => {
       <nav className="flex-1 overflow-y-auto p-4" data-testid="sidebar-nav">
         <ul className="space-y-1">
           {menuItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive =
+              location.pathname === item.path ||
+              location.pathname.startsWith(`${item.path}/`);
             return (
               <li key={item.path}>
                 <Link

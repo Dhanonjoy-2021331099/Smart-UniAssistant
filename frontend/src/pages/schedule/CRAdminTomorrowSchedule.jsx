@@ -131,7 +131,10 @@ const CRAdminTomorrowSchedule = () => {
     queryFn: () => fetchSchedules({ status: "published", limit: 100 }),
   });
 
-  const publishedSchedules = publishedData?.schedules || [];
+  const publishedSchedules = useMemo(
+    () => publishedData?.schedules || [],
+    [publishedData],
+  );
 
   useEffect(() => {
     let cancelled = false;

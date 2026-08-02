@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getStudentAssignments, submitAssignment } from '../../services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -19,20 +19,35 @@ const StudentAssignments = () => {
   const [comments, setComments] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchAssignments();
-  }, []);
-
   const fetchAssignments = async () => {
-    try {
-      const data = await getStudentAssignments();
-      setAssignments(data);
-    } catch (error) {
-      toast.error('Failed to load assignments');
-    } finally {
-      setLoading(false);
-    }
+    const data = await getStudentAssignments();
+    setAssignments(data);
   };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getStudentAssignments()
+      .then((data) => {
+        if (!cancelled) {
+          setAssignments(data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          toast.error('Failed to load assignments');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

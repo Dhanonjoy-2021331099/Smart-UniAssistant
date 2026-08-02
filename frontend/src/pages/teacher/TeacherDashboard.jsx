@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { getTeacherDashboard, getTeacherCourses } from '../../services/api';
+import { useEffect, useState } from 'react';
+import { getTeacherDashboard } from '../../services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { BookOpen, Users, ClipboardList, Award } from 'lucide-react';
 import { toast } from 'sonner';
@@ -9,19 +9,29 @@ const TeacherDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboard();
-  }, []);
+    let cancelled = false;
 
-  const fetchDashboard = async () => {
-    try {
-      const data = await getTeacherDashboard();
-      setDashboard(data);
-    } catch (error) {
-      toast.error('Failed to load dashboard');
-    } finally {
-      setLoading(false);
-    }
-  };
+    getTeacherDashboard()
+      .then((data) => {
+        if (!cancelled) {
+          setDashboard(data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          toast.error('Failed to load dashboard');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (loading) {
     return <div className="flex justify-center items-center h-64" data-testid="loading-spinner"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;

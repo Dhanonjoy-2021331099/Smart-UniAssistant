@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getCRAdminDashboard } from '../../services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Bell, Users, Calendar, FolderOpen } from 'lucide-react';
@@ -9,19 +9,29 @@ const CRAdminDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboard();
-  }, []);
+    let cancelled = false;
 
-  const fetchDashboard = async () => {
-    try {
-      const data = await getCRAdminDashboard();
-      setDashboard(data);
-    } catch (error) {
-      toast.error('Failed to load dashboard');
-    } finally {
-      setLoading(false);
-    }
-  };
+    getCRAdminDashboard()
+      .then((data) => {
+        if (!cancelled) {
+          setDashboard(data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          toast.error('Failed to load dashboard');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (loading) {
     return <div className="flex justify-center items-center h-64" data-testid="loading-spinner"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;

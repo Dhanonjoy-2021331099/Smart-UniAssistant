@@ -1,15 +1,46 @@
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
 
 const DropdownMenuContext = createContext(null);
 
 export function DropdownMenu({ children }) {
   const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
   const value = useMemo(() => ({ open, setOpen }), [open]);
+
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+
+    const handleClickOutside = (event) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target)
+      ) {
+        setOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
 
   return (
     <DropdownMenuContext.Provider value={value}>
-      {children}
+      <div className="relative inline-block" ref={containerRef}>
+        {children}
+      </div>
     </DropdownMenuContext.Provider>
   );
 }
