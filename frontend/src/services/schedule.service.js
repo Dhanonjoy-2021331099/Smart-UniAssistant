@@ -28,6 +28,16 @@ export const fetchSchedules = async (params = {}) => {
   return unwrap(data);
 };
 
+export const fetchScheduleHistory = async (params = {}) => {
+  const { data } = await api.get("/api/schedules/history", { params });
+  return unwrap(data);
+};
+
+export const fetchCourseStatistics = async () => {
+  const { data } = await api.get("/api/schedules/course-statistics");
+  return unwrap(data);
+};
+
 export const fetchScheduleById = async (scheduleId) => {
   const { data } = await api.get(`/api/schedules/${scheduleId}`);
   return unwrap(data);

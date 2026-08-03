@@ -578,6 +578,157 @@ export const listSchedules = async (user, query = {}) => {
   };
 };
 
+export const listScheduleHistory = async (user, query = {}) => {
+  const { date = "", courseName = "", teacher = "", courseCode = "" } = query;
+  const filter = {};
+
+  if (user.role === "student") {
+    filter.status = "published";
+  } else {
+    filter.createdBy = user._id;
+  }
+
+  if (date) {
+    filter.date = parseDate(date);
+  }
+
+  const schedules = await DailySchedule.find(filter).sort({
+    date: -1,
+    createdAt: -1,
+  });
+
+  const ownerIds = [
+    ...new Set(schedules.map((schedule) => String(schedule.createdBy))),
+  ];
+  const routines = await WeeklyRoutine.find({
+    createdBy: { $in: ownerIds },
+  }).lean();
+  const routineByOwner = new Map(
+    routines.map((routine) => [String(routine.createdBy), routine]),
+  );
+
+  const term = (value) => String(value || "").toLowerCase().trim();
+  const courseNameTerm = term(courseName);
+  const teacherTerm = term(teacher);
+  const courseCodeTerm = term(courseCode);
+
+  const view = schedules
+    .map((schedule) =>
+      toScheduleView(schedule, routineByOwner.get(String(schedule.createdBy))),
+    )
+    .map((schedule) => {
+      const classes = schedule.classes
+        .filter((entry) => {
+          if (courseNameTerm && !term(entry.courseName).includes(courseNameTerm)) {
+            return false;
+          }
+
+          if (teacherTerm && !term(entry.teacher).includes(teacherTerm)) {
+            return false;
+          }
+
+          if (courseCodeTerm && !term(entry.courseCode).includes(courseCodeTerm)) {
+            return false;
+          }
+
+          return true;
+        })
+        .sort((first, second) =>
+          `${first.startTime}`.localeCompare(`${second.startTime}`),
+        );
+
+      return { ...schedule, classes };
+    })
+    .filter((schedule) => {
+      const hasTermFilter =
+        courseNameTerm || teacherTerm || courseCodeTerm;
+
+      return !hasTermFilter || schedule.classes.length > 0;
+    });
+
+  return { schedules: view, total: view.length };
+};
+
+export const getCourseStatistics = async () => {
+  const schedules = await DailySchedule.find({ status: "published" }).sort({
+    date: 1,
+    createdAt: 1,
+  });
+
+  const ownerIds = [
+    ...new Set(schedules.map((schedule) => String(schedule.createdBy))),
+  ];
+  const routines = await WeeklyRoutine.find({
+    createdBy: { $in: ownerIds },
+  }).lean();
+  const routineByOwner = new Map(
+    routines.map((routine) => [String(routine.createdBy), routine]),
+  );
+
+  const courseKey = (entry) =>
+    `${entry.courseName}|${entry.courseCode}|${entry.teacher}|${entry.section}`;
+
+  const statsByCourse = new Map();
+
+  for (const schedule of schedules) {
+    const routine = routineByOwner.get(String(schedule.createdBy));
+    const classes = resolveScheduleClasses(schedule, routine);
+    const scheduleDate = new Date(schedule.date);
+
+    for (const entry of classes) {
+      const key = courseKey(entry);
+      let record = statsByCourse.get(key);
+
+      if (!record) {
+        record = {
+          courseName: entry.courseName,
+          courseCode: entry.courseCode,
+          teacher: entry.teacher,
+          section: entry.section,
+          theoryCount: 0,
+          labCount: 0,
+          physicalCount: 0,
+          onlineCount: 0,
+          totalClasses: 0,
+          lastClassDate: scheduleDate,
+        };
+        statsByCourse.set(key, record);
+      }
+
+      if (entry.classType === "Theory") {
+        record.theoryCount += 1;
+      } else if (entry.classType === "Lab") {
+        record.labCount += 1;
+      }
+
+      if (entry.classMode === "Physical") {
+        record.physicalCount += 1;
+      } else if (entry.classMode === "Online") {
+        record.onlineCount += 1;
+      }
+
+      if (scheduleDate > new Date(record.lastClassDate)) {
+        record.lastClassDate = scheduleDate;
+      }
+    }
+  }
+
+  const statistics = [...statsByCourse.values()].map((record) => ({
+    ...record,
+    totalClasses:
+      record.theoryCount +
+      record.labCount +
+      record.physicalCount +
+      record.onlineCount,
+  }));
+
+  statistics.sort((first, second) =>
+    String(first.courseName).localeCompare(String(second.courseName)),
+  );
+
+  return statistics;
+};
+
 export const getSchedule = async (user, scheduleId) => {
   if (!mongoose.isValidObjectId(scheduleId)) {
     throw new AppError("Invalid schedule ID", 400);
@@ -881,6 +1032,8 @@ export default {
   saveRoutine,
   generateSchedule,
   listSchedules,
+  listScheduleHistory,
+  getCourseStatistics,
   getSchedule,
   updateSchedule,
   publishSchedule,

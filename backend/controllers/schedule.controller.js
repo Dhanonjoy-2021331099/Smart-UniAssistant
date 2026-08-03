@@ -6,6 +6,8 @@ import {
   saveRoutine,
   generateSchedule,
   listSchedules,
+  listScheduleHistory,
+  getCourseStatistics as getCourseStatisticsService,
   getSchedule,
   updateSchedule,
   publishSchedule,
@@ -74,6 +76,36 @@ export const getSchedules = async (req, res) => {
     return sendSuccess(res, 200, "Schedules retrieved successfully", result);
   } catch (error) {
     return handleScheduleError(res, error, "Get schedules error");
+  }
+};
+
+export const getScheduleHistory = async (req, res) => {
+  try {
+    const result = await listScheduleHistory(req.user, req.query);
+
+    return sendSuccess(
+      res,
+      200,
+      "Schedule history retrieved successfully",
+      result,
+    );
+  } catch (error) {
+    return handleScheduleError(res, error, "Get schedule history error");
+  }
+};
+
+export const getCourseStatistics = async (req, res) => {
+  try {
+    const statistics = await getCourseStatisticsService();
+
+    return sendSuccess(
+      res,
+      200,
+      "Course statistics retrieved successfully",
+      statistics,
+    );
+  } catch (error) {
+    return handleScheduleError(res, error, "Get course statistics error");
   }
 };
 
@@ -146,6 +178,8 @@ export default {
   saveWeeklyRoutine,
   createScheduleForDate,
   getSchedules,
+  getScheduleHistory,
+  getCourseStatistics,
   getScheduleById,
   updateScheduleById,
   publishScheduleById,

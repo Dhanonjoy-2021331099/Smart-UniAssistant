@@ -6,6 +6,8 @@ import {
   saveWeeklyRoutine,
   createScheduleForDate,
   getSchedules,
+  getScheduleHistory,
+  getCourseStatistics,
   getScheduleById,
   updateScheduleById,
   publishScheduleById,
@@ -26,6 +28,8 @@ router.put("/routine", requireScheduleManager, saveWeeklyRoutine);
 router.post("/generate", requireScheduleManager, createScheduleForDate);
 
 router.get("/", getSchedules);
+router.get("/history", getScheduleHistory);
+router.get("/course-statistics", getCourseStatistics);
 router.get("/:id", getScheduleById);
 
 router.put("/:id", requireScheduleManager, updateScheduleById);
