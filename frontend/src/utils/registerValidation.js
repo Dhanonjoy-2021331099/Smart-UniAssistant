@@ -1,4 +1,16 @@
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ACADEMIC_SESSION_PATTERN = /^\d{4}-\d{2}$/;
+
+export const SEMESTER_OPTIONS = [
+  "1-1",
+  "1-2",
+  "2-1",
+  "2-2",
+  "3-1",
+  "3-2",
+  "4-1",
+  "4-2",
+];
 
 export const INITIAL_REGISTER_FORM = {
   name: "",
@@ -9,10 +21,12 @@ export const INITIAL_REGISTER_FORM = {
   teacherId: "",
   department: "",
   batch: "",
+  semester: "",
+  academicSession: "",
+  section: "",
 };
 
-export const roleNeedsBatch = (role) =>
-  role === "student" || role === "cr_admin";
+export const roleNeedsBatch = (role) => role === "cr_admin";
 
 export const roleNeedsStudentId = (role) =>
   role === "student" || role === "cr_admin";
@@ -25,7 +39,18 @@ export const buildRegisterPayload = (formData) => {
     role: formData.role,
   };
 
-  if (formData.role === "student" || formData.role === "cr_admin") {
+  if (formData.role === "student") {
+    return {
+      ...base,
+      studentId: formData.studentId.trim(),
+      department: formData.department,
+      semester: formData.semester,
+      academicSession: formData.academicSession.trim(),
+      section: formData.section,
+    };
+  }
+
+  if (formData.role === "cr_admin") {
     return {
       ...base,
       studentId: formData.studentId.trim(),
@@ -88,6 +113,19 @@ export const validateRegisterForm = (formData) => {
 
   if (roleNeedsBatch(formData.role) && !formData.batch) {
     errors.batch = "Batch is required";
+  }
+
+  if (formData.role === "student") {
+    if (!formData.semester) {
+      errors.semester = "Semester is required";
+    }
+
+    if (!formData.academicSession.trim()) {
+      errors.academicSession = "Academic session is required";
+    } else if (!ACADEMIC_SESSION_PATTERN.test(formData.academicSession.trim())) {
+      errors.academicSession =
+        "Session must be in a format like 2021-22, 2022-23";
+    }
   }
 
   return errors;

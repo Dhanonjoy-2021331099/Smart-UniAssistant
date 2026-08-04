@@ -1,10 +1,13 @@
 import mongoose from 'mongoose';
+import { DEPARTMENTS } from './TeacherCourse.js';
 
 const studentSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
   studentId: { type: String, required: true, unique: true },
-  department: { type: mongoose.Schema.Types.ObjectId, ref: 'Department', required: true },
-  batch: { type: mongoose.Schema.Types.ObjectId, ref: 'Batch', required: true },
+  department: { type: String, enum: DEPARTMENTS, default: 'CSE' },
+  section: { type: String, default: '' },
+  semester: { type: String, default: '' },
+  academicSession: { type: String, default: '' },
   session: String,
   bloodGroup: String,
   phone: String,

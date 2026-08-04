@@ -497,7 +497,6 @@ const CourseStatisticsPanel = () => {
     courseName: "",
     courseCode: "",
     teacher: "",
-    section: "",
   });
 
   const {
@@ -518,7 +517,6 @@ const CourseStatisticsPanel = () => {
     const courseNameTerm = term(filters.courseName);
     const courseCodeTerm = term(filters.courseCode);
     const teacherTerm = term(filters.teacher);
-    const sectionTerm = term(filters.section);
 
     if (courseNameTerm && !term(record.courseName).includes(courseNameTerm)) {
       return false;
@@ -532,10 +530,6 @@ const CourseStatisticsPanel = () => {
       return false;
     }
 
-    if (sectionTerm && term(record.section) !== sectionTerm) {
-      return false;
-    }
-
     return true;
   };
 
@@ -543,7 +537,7 @@ const CourseStatisticsPanel = () => {
   const hasActiveFilters = Object.values(filters).some(Boolean);
 
   const clearFilters = () =>
-    setFilters({ courseName: "", courseCode: "", teacher: "", section: "" });
+    setFilters({ courseName: "", courseCode: "", teacher: "" });
 
   const inputClassName =
     "w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-600/50";
@@ -597,22 +591,6 @@ const CourseStatisticsPanel = () => {
             placeholder="Teacher"
             className={`${inputClassName} lg:w-52`}
           />
-          <select
-            value={filters.section}
-            onChange={(event) =>
-              setFilters((prev) => ({
-                ...prev,
-                section: event.target.value,
-              }))
-            }
-            className={`${inputClassName} lg:w-48`}
-            aria-label="Filter by section"
-          >
-            <option value="">All sections</option>
-            <option value="A">Section A</option>
-            <option value="B">Section B</option>
-            <option value="Both">Section A + B</option>
-          </select>
           {hasActiveFilters && (
             <Button variant="outline" onClick={clearFilters}>
               <X className="w-4 h-4 mr-2" />

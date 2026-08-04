@@ -114,7 +114,7 @@ export const getTeacherDashboard = async () => {
 
 export const getTeacherCourses = async () => {
   const { data } = await api.get("/api/teachers/courses");
-  return data;
+  return data?.data ?? data;
 };
 
 export const uploadCourseMaterial = async (formData) => {

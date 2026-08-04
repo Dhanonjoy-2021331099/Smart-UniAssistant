@@ -20,6 +20,7 @@ export const DEFAULT_STUDENT_PROFILE = {
   academic: {
     currentYear: 1,
     currentSemester: 1,
+    section: "",
     admissionYear: new Date().getFullYear(),
     expectedGraduationYear: new Date().getFullYear() + 4,
   },

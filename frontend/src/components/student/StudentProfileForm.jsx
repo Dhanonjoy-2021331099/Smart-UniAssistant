@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import AvatarUpload from "../profile/AvatarUpload";
+import { updateStudentProfile } from "../../services/studentCourses.service";
 
 const selectClass =
   "flex h-10 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50";
@@ -59,9 +60,14 @@ const buildForm = (profile, user) => ({
   academic: {
     currentYear: Number(profile?.academic?.currentYear) || 1,
     currentSemester: Number(profile?.academic?.currentSemester) || 1,
+    section: profile?.academic?.section || "",
     admissionYear: profile?.academic?.admissionYear || new Date().getFullYear(),
     expectedGraduationYear:
       profile?.academic?.expectedGraduationYear || new Date().getFullYear() + 4,
+    // Backend sync fields
+    department: profile?.academic?.department || profile?.personal?.department || "",
+    semester: profile?.academic?.semester || String(profile?.academic?.currentSemester || 1),
+    academicSession: profile?.academic?.academicSession || "",
   },
   performance: {
     cgpa: Number(profile?.performance?.cgpa) || 0,
@@ -82,6 +88,7 @@ const StudentProfileForm = ({
   updatePerformance,
 }) => {
   const [form, setForm] = useState(() => buildForm(profile, user));
+  const [savingAcademic, setSavingAcademic] = useState(false);
 
   const updateField = (section, key, value) => {
     setForm((prev) => ({
@@ -118,6 +125,23 @@ const StudentProfileForm = ({
     toast.success("Academic information updated");
   };
 
+  const handleSyncAcademicToBackend = async () => {
+    setSavingAcademic(true);
+    try {
+      await updateStudentProfile({
+        department: form.academic.department,
+        semester: form.academic.semester,
+        section: form.academic.section,
+        academicSession: form.academic.academicSession,
+      });
+      toast.success("Academic profile synced to backend");
+    } catch {
+      toast.error("Failed to sync academic profile");
+    } finally {
+      setSavingAcademic(false);
+    }
+  };
+
   const remainingCredits = Math.max(
     0,
     Number(form.performance.requiredCredits) - Number(form.performance.completedCredits),
@@ -141,8 +165,12 @@ const StudentProfileForm = ({
   const academicSummary = [
     { label: "Current Year", value: `Year ${form.academic.currentYear}` },
     { label: "Current Semester", value: `Semester ${form.academic.currentSemester}` },
+    { label: "Section", value: form.academic.section ? `Section ${form.academic.section}` : "—" },
     { label: "Admission Year", value: String(form.academic.admissionYear) },
     { label: "Expected Graduation Year", value: String(form.academic.expectedGraduationYear) },
+    { label: "Department (Course Matching)", value: form.academic.department || "—" },
+    { label: "Semester (Course Matching)", value: form.academic.semester || "—" },
+    { label: "Academic Session (Course Matching)", value: form.academic.academicSession || "—" },
   ];
 
   const renderPerformanceStats = () => (
@@ -396,6 +424,17 @@ const StudentProfileForm = ({
                     ))}
                   </select>
                 </Field>
+                <Field label="Section">
+                  <select
+                    className={selectClass}
+                    value={form.academic.section}
+                    onChange={(e) => updateField("academic", "section", e.target.value)}
+                  >
+                    <option value="">Select section</option>
+                    <option value="A">Section A</option>
+                    <option value="B">Section B</option>
+                  </select>
+                </Field>
                 <Field label="Admission Year">
                   <Input
                     type="number"
@@ -413,10 +452,55 @@ const StudentProfileForm = ({
                   />
                 </Field>
               </div>
-              <div className="mt-4 flex justify-end">
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                <Field label="Department">
+                  <select
+                    className={selectClass}
+                    value={form.academic.department}
+                    onChange={(e) => updateField("academic", "department", e.target.value)}
+                  >
+                    <option value="">Select department</option>
+                    <option value="CSE">CSE</option>
+                    <option value="EEE">EEE</option>
+                    <option value="SWE">SWE</option>
+                  </select>
+                </Field>
+                <Field label="Semester (for course matching)">
+                  <select
+                    className={selectClass}
+                    value={form.academic.semester}
+                    onChange={(e) => updateField("academic", "semester", e.target.value)}
+                  >
+                    <option value="">Select semester</option>
+                    {["1-1", "1-2", "2-1", "2-2", "3-1", "3-2", "4-1", "4-2"].map((semester) => (
+                      <option key={semester} value={semester}>
+                        Semester {semester}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Academic Session (for course matching)">
+                  <Input
+                    value={form.academic.academicSession}
+                    onChange={(e) => updateField("academic", "academicSession", e.target.value)}
+                    placeholder="e.g. 2021-22, 2022-23"
+                  />
+                </Field>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-2 justify-end">
                 <Button variant="outline" onClick={handleUpdateAcademic} data-testid="update-academic-button">
                   <CalendarClock className="w-4 h-4 mr-2" />
                   Update Academic Information
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleSyncAcademicToBackend}
+                  disabled={savingAcademic}
+                  data-testid="sync-academic-button"
+                >
+                  {savingAcademic ? "Syncing..." : "Sync to Backend"}
                 </Button>
               </div>
             </>

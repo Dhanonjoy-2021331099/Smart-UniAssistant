@@ -79,7 +79,7 @@ export const manageRoutine = async (req, res) => {
         examSchedule,
         createdBy: req.user._id,
       },
-      { new: true, upsert: true },
+      { returnDocument: 'after', upsert: true },
     );
 
     res.json(routine);

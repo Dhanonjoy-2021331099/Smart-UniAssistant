@@ -41,7 +41,10 @@ const createRoleProfile = async (role, userId, payload, session) => {
           userId,
           studentId: payload.studentId,
           department: payload.department,
-          batch: payload.batch,
+          section: payload.section || "",
+          semester: payload.semester || "",
+          academicSession: payload.academicSession || "",
+          session: payload.academicSession || "",
         },
       ],
       options,
@@ -80,13 +83,11 @@ const createRoleProfile = async (role, userId, payload, session) => {
 
 const getRoleProfile = async (user) => {
   if (user.role === "student") {
-    return Student.findOne({ userId: user._id })
-      .populate("department")
-      .populate("batch");
+    return Student.findOne({ userId: user._id });
   }
 
   if (user.role === "teacher") {
-    return Teacher.findOne({ userId: user._id }).populate("department");
+    return Teacher.findOne({ userId: user._id });
   }
 
   if (user.role === "cr_admin") {

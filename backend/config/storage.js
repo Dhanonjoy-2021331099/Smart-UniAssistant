@@ -198,5 +198,42 @@ export const generateFilePath = (userId, filename) => {
   return `${APP_NAME}/uploads/${userId}/${uniqueName}`;
 };
 
+const deleteFromLocal = async (relativePath) => {
+  const absolutePath = path.join(LOCAL_UPLOAD_DIR, relativePath);
+  await fs.unlink(absolutePath);
+};
+
+export const deleteFile = async (relativePath) => {
+  if (!relativePath) {
+    return;
+  }
+
+  const key = await initStorage();
+
+  if (!key) {
+    try {
+      await deleteFromLocal(relativePath);
+    } catch (error) {
+      console.warn(
+        '⚠️ Could not delete local file (may already be missing):',
+        error.message,
+      );
+    }
+    return;
+  }
+
+  try {
+    await axios.delete(`${STORAGE_URL}/objects/${relativePath}`, {
+      headers: { 'X-Storage-Key': key },
+      timeout: 30000,
+    });
+  } catch (error) {
+    console.warn(
+      '⚠️ Object storage delete failed (file may not exist remotely):',
+      error.message,
+    );
+  }
+};
+
 export const getUploadUrl = (uploaded, relativePath) =>
   uploaded?.url || uploaded?.public_url || uploaded?.path || `/uploads/${relativePath.replace(/\\/g, '/')}`;

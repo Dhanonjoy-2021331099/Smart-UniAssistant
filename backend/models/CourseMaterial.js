@@ -1,8 +1,9 @@
 import mongoose from 'mongoose';
 
 const courseMaterialSchema = new mongoose.Schema({
-  course: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
-  batch: { type: mongoose.Schema.Types.ObjectId, ref: 'Batch', required: true },
+  teacherCourseId: { type: mongoose.Schema.Types.ObjectId, ref: 'TeacherCourse', required: true },
+  course: { type: mongoose.Schema.Types.ObjectId, ref: 'Course' },
+  batch: { type: mongoose.Schema.Types.ObjectId, ref: 'Batch' },
   teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher', required: true },
   title: { type: String, required: true },
   description: String,
@@ -17,5 +18,7 @@ const courseMaterialSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
+
+courseMaterialSchema.index({ teacherCourseId: 1, createdAt: -1 });
 
 export default mongoose.model('CourseMaterial', courseMaterialSchema);

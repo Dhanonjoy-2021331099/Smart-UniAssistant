@@ -91,6 +91,8 @@ const NotificationsMenu = ({ user }) => {
       socket.on("notice:published", refresh);
       socket.on("schedule:published", refresh);
       socket.on("schedule:updated", refresh);
+      socket.on("result:published", refresh);
+      socket.on("result:updated", refresh);
     }
 
     return () => {
@@ -98,6 +100,8 @@ const NotificationsMenu = ({ user }) => {
         socket.off("notice:published", refresh);
         socket.off("schedule:published", refresh);
         socket.off("schedule:updated", refresh);
+        socket.off("result:published", refresh);
+        socket.off("result:updated", refresh);
       }
 
       disconnectSocket();
@@ -129,8 +133,10 @@ const NotificationsMenu = ({ user }) => {
 
     setOpen(false);
 
-    if (notification.scheduleId) {
-      navigate(notification.link || "/student/schedule");
+    if (notification.link) {
+      navigate(notification.link);
+    } else if (notification.scheduleId) {
+      navigate("/student/schedule");
     } else if (notification.noticeId) {
       const basePath = getNoticeBasePath(user?.role);
       navigate(`${basePath}/${notification.noticeId}`);

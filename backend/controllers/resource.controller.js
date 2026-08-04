@@ -28,7 +28,7 @@ export const incrementDownload = async (req, res) => {
     const resource = await Resource.findByIdAndUpdate(
       resourceId,
       { $inc: { downloads: 1 } },
-      { new: true }
+      { returnDocument: 'after' }
     );
     
     res.json(resource);

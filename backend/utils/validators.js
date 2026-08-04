@@ -58,6 +58,34 @@ export const validateDepartmentExists = async (departmentId) => {
   return department;
 };
 
+export const ALLOWED_DEPARTMENTS = ['CSE', 'EEE', 'SWE'];
+
+export const ACADEMIC_SESSION_PATTERN = /^\d{4}-\d{2}$/;
+
+export const validateDepartmentCode = (department) => {
+  if (!ALLOWED_DEPARTMENTS.includes(department)) {
+    throw new AppError(
+      `Invalid department. Allowed departments: ${ALLOWED_DEPARTMENTS.join(', ')}`,
+      400,
+    );
+  }
+
+  return department;
+};
+
+export const validateAcademicSession = (session) => {
+  const value = sanitizeString(session);
+
+  if (value && !ACADEMIC_SESSION_PATTERN.test(value)) {
+    throw new AppError(
+      'Academic session must be in a format like 2021-22, 2022-23, 2023-24',
+      400,
+    );
+  }
+
+  return value;
+};
+
 export const validateBatchExists = async (batchId, departmentId = null) => {
   if (!isValidObjectId(batchId)) {
     throw new AppError("Invalid batch ID", 400);
@@ -92,6 +120,9 @@ export const validateRegisterPayload = async (body) => {
   const teacherId = sanitizeString(body.teacherId);
   const department = sanitizeString(body.department);
   const batch = sanitizeString(body.batch);
+  const section = sanitizeString(body.section);
+  const semester = sanitizeString(body.semester);
+  const academicSession = sanitizeString(body.academicSession);
 
   assertRequiredFields({ email, password, name, role });
   validateRole(role);
@@ -103,15 +134,22 @@ export const validateRegisterPayload = async (body) => {
   const payload = { email, password, name, role };
 
   if (role === "student") {
-    assertRequiredFields({ studentId, department, batch });
-    await validateDepartmentExists(department);
-    await validateBatchExists(batch, department);
-    return { ...payload, studentId, department, batch };
+    assertRequiredFields({ studentId, department, semester, academicSession });
+    validateDepartmentCode(department);
+    validateAcademicSession(academicSession);
+    return {
+      ...payload,
+      studentId,
+      department,
+      section,
+      semester,
+      academicSession,
+    };
   }
 
   if (role === "teacher") {
     assertRequiredFields({ teacherId, department });
-    await validateDepartmentExists(department);
+    validateDepartmentCode(department);
     return { ...payload, teacherId, department };
   }
 
@@ -131,6 +169,9 @@ export const validateCompleteProfilePayload = async (body) => {
   const teacherId = sanitizeString(body.teacherId);
   const department = sanitizeString(body.department);
   const batch = sanitizeString(body.batch);
+  const section = sanitizeString(body.section);
+  const semester = sanitizeString(body.semester);
+  const academicSession = sanitizeString(body.academicSession);
 
   assertRequiredFields({ role });
   validateRole(role);
@@ -138,15 +179,22 @@ export const validateCompleteProfilePayload = async (body) => {
   const payload = { role };
 
   if (role === "student") {
-    assertRequiredFields({ studentId, department, batch });
-    await validateDepartmentExists(department);
-    await validateBatchExists(batch, department);
-    return { ...payload, studentId, department, batch };
+    assertRequiredFields({ studentId, department, semester, academicSession });
+    validateDepartmentCode(department);
+    validateAcademicSession(academicSession);
+    return {
+      ...payload,
+      studentId,
+      department,
+      section,
+      semester,
+      academicSession,
+    };
   }
 
   if (role === "teacher") {
     assertRequiredFields({ teacherId, department });
-    await validateDepartmentExists(department);
+    validateDepartmentCode(department);
     return { ...payload, teacherId, department };
   }
 

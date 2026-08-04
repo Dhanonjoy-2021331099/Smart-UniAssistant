@@ -39,7 +39,7 @@ const TeacherDashboard = () => {
 
   const stats = [
     { icon: BookOpen, label: 'Assigned Courses', value: dashboard?.courses?.length || 0, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' },
-    { icon: Users, label: 'Total Batches', value: [...new Set(dashboard?.courses?.map(c => c.batch?._id))].length || 0, color: 'text-green-600 bg-green-50 dark:bg-green-900/20' },
+    { icon: Users, label: 'Total Sections', value: [...new Set(dashboard?.courses?.map(c => c.section))].filter(Boolean).length || 0, color: 'text-green-600 bg-green-50 dark:bg-green-900/20' },
     { icon: ClipboardList, label: 'Assignments', value: 0, color: 'text-orange-600 bg-orange-50 dark:bg-orange-900/20' },
     { icon: Award, label: 'Results Published', value: 0, color: 'text-purple-600 bg-purple-50 dark:bg-purple-900/20' }
   ];
@@ -84,14 +84,14 @@ const TeacherDashboard = () => {
                       <BookOpen className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-white">{teacherCourse.course?.title}</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{teacherCourse.courseName}</p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {teacherCourse.course?.code} • {teacherCourse.batch?.name} • {teacherCourse.course?.credit} Credits
+                        {teacherCourse.courseCode} • {teacherCourse.departmentName || teacherCourse.department || '—'} • {teacherCourse.section ? `Section ${teacherCourse.section}` : 'No section'}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-gray-500">{teacherCourse.semester}</p>
+                    <p className="text-sm text-gray-500">Semester {teacherCourse.semester}</p>
                   </div>
                 </div>
               ))

@@ -1,5 +1,8 @@
 import Notification from '../models/Notification.js';
 import User from '../models/User.js';
+import Student from '../models/Student.js';
+import { RESULT_TYPE_LABELS } from '../models/Result.js';
+import { findStudentsInCohort } from './cohort.service.js';
 import { getIO } from '../config/socket.js';
 
 export const resolveRecipientUID = (user) => user?.firebaseUid || String(user?._id);
@@ -97,9 +100,100 @@ export const createScheduleNotifications = async (schedule, mode) => {
   }
 };
 
+export const createResultNotifications = async (result, { isUpdate = false } = {}) => {
+  if (
+    !result ||
+    result.status !== 'published' ||
+    result.isPublished !== true
+  ) {
+    return;
+  }
+
+  let students = [];
+
+  if (result.student) {
+    const student = await Student.findById(result.student).lean();
+
+    if (student) {
+      students = [student];
+    }
+  } else {
+    // Class-wide result: notify every student in the matching cohort
+    // (department + semester + academic session via registration batch year).
+    students = await findStudentsInCohort(result);
+  }
+
+  if (students.length === 0) {
+    return;
+  }
+
+  const userIds = [
+    ...new Set(students.map((student) => student.userId?.toString()).filter(Boolean)),
+  ];
+
+  const users = await User.find({ _id: { $in: userIds }, isActive: true })
+    .select('_id firebaseUid')
+    .lean();
+
+  if (users.length === 0) {
+    return;
+  }
+
+  const userMap = new Map(users.map((user) => [user._id.toString(), user]));
+
+  const resultTypeLabel = RESULT_TYPE_LABELS[result.resultType] || 'Result';
+  const courseTitle = result.courseName || result.courseCode || 'Course';
+  const title = isUpdate ? 'Result Updated' : 'New Result Published';
+  const message = `${courseTitle} - ${resultTypeLabel} result has been ${isUpdate ? 'updated' : 'published'}.`;
+
+  const notifications = students
+    .map((student) => {
+      const user = userMap.get(student.userId?.toString());
+
+      if (!user) {
+        return null;
+      }
+
+      return {
+        title,
+        message,
+        resultId: result._id,
+        courseCode: result.courseCode,
+        courseName: result.courseName,
+        semester: result.semester,
+        resultType: result.resultType,
+        teacherId: result.teacherId,
+        teacherName: result.teacherName,
+        publishDate: result.publishDate || result.publishedAt,
+        link: `/student/results?resultId=${result._id}`,
+        recipientRole: 'student',
+        recipientUID: resolveRecipientUID(user),
+      };
+    })
+    .filter(Boolean);
+
+  if (notifications.length === 0) {
+    return;
+  }
+
+  await Notification.insertMany(notifications);
+
+  const io = getIO();
+
+  if (io) {
+    io.to('students').emit(isUpdate ? 'result:updated' : 'result:published', {
+      resultId: result._id,
+      courseCode: result.courseCode,
+      courseName: result.courseName,
+      resultType: result.resultType,
+    });
+  }
+};
+
 export default {
   createNoticeNotifications,
   createScheduleNotifications,
+  createResultNotifications,
   notificationsExistForNotice,
   resolveRecipientUID,
 };

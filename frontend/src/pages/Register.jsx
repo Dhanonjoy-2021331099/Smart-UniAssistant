@@ -17,8 +17,11 @@ import {
   INITIAL_REGISTER_FORM,
   buildRegisterPayload,
   roleNeedsBatch,
+  roleNeedsStudentId,
   validateRegisterForm,
+  SEMESTER_OPTIONS,
 } from "../utils/registerValidation";
+import { DEPARTMENTS } from "../services/teacherCourse.service";
 import {
   GraduationCap,
   Mail,
@@ -40,6 +43,8 @@ const Register = () => {
   const navigate = useNavigate();
 
   const needsBatch = roleNeedsBatch(formData.role);
+  const isCrAdmin = formData.role === "cr_admin";
+  const isStudent = formData.role === "student";
 
   const {
     data: departments = [],
@@ -48,6 +53,7 @@ const Register = () => {
   } = useQuery({
     queryKey: ["departments"],
     queryFn: getDepartments,
+    enabled: isCrAdmin,
   });
 
   const {
@@ -81,6 +87,9 @@ const Register = () => {
         next.teacherId = "";
         next.department = "";
         next.batch = "";
+        next.semester = "";
+        next.academicSession = "";
+        next.section = "";
       }
 
       if (field === "department") {
@@ -217,7 +226,7 @@ const Register = () => {
                 <FormFieldError message={errors.role} />
               </div>
 
-              {(formData.role === "student" || formData.role === "cr_admin") && (
+              {roleNeedsStudentId(formData.role) && (
                 <div className="space-y-2">
                   <Label htmlFor="studentId">Student ID</Label>
                   <div className="relative">
@@ -274,23 +283,96 @@ const Register = () => {
                         handleChange("department", e.target.value)
                       }
                       className={`${selectClassName} pl-10`}
-                      disabled={departmentsLoading}
+                      disabled={isCrAdmin && departmentsLoading}
                       aria-invalid={Boolean(errors.department)}
                     >
                       <option value="">
-                        {departmentsLoading
-                          ? "Loading departments..."
+                        {isCrAdmin
+                          ? departmentsLoading
+                            ? "Loading departments..."
+                            : "Select department"
                           : "Select department"}
                       </option>
-                      {departments.map((department) => (
-                        <option key={department._id} value={department._id}>
-                          {department.name} ({department.code})
-                        </option>
-                      ))}
+                      {isCrAdmin
+                        ? departments.map((department) => (
+                            <option
+                              key={department._id}
+                              value={department._id}
+                            >
+                              {department.name} ({department.code})
+                            </option>
+                          ))
+                        : DEPARTMENTS.map((department) => (
+                            <option
+                              key={department.value}
+                              value={department.value}
+                            >
+                              {department.label}
+                            </option>
+                          ))}
                     </select>
                   </div>
                   <FormFieldError message={errors.department} />
                 </div>
+              )}
+
+              {isStudent && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="semester">Semester</Label>
+                    <select
+                      id="semester"
+                      data-testid="semester-select"
+                      value={formData.semester}
+                      onChange={(e) =>
+                        handleChange("semester", e.target.value)
+                      }
+                      className={selectClassName}
+                      aria-invalid={Boolean(errors.semester)}
+                    >
+                      <option value="">Select semester</option>
+                      {SEMESTER_OPTIONS.map((semester) => (
+                        <option key={semester} value={semester}>
+                          Semester {semester}
+                        </option>
+                      ))}
+                    </select>
+                    <FormFieldError message={errors.semester} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="academicSession">Academic Session</Label>
+                    <Input
+                      id="academicSession"
+                      data-testid="academic-session-input"
+                      placeholder="e.g. 2021-22"
+                      value={formData.academicSession}
+                      onChange={(e) =>
+                        handleChange("academicSession", e.target.value)
+                      }
+                      aria-invalid={Boolean(errors.academicSession)}
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Use formats like 2021-22, 2022-23, 2023-24.
+                    </p>
+                    <FormFieldError message={errors.academicSession} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="section">Section</Label>
+                    <select
+                      id="section"
+                      data-testid="section-select"
+                      value={formData.section}
+                      onChange={(e) => handleChange("section", e.target.value)}
+                      className={selectClassName}
+                    >
+                      <option value="">Select section (optional)</option>
+                      <option value="A">Section A</option>
+                      <option value="B">Section B</option>
+                    </select>
+                  </div>
+                </>
               )}
 
               {needsBatch && (
@@ -340,7 +422,7 @@ const Register = () => {
                 type="submit"
                 data-testid="register-button"
                 className="w-full bg-blue-600 hover:bg-blue-700"
-                disabled={loading || departmentsLoading}
+                disabled={loading || (isCrAdmin && departmentsLoading)}
               >
                 {loading ? "Creating Account..." : "Create Account"}
               </Button>
