@@ -50,7 +50,7 @@ export function DialogContent({ className, children, onInteractOutside }) {
 
   const content = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4"
       role="presentation"
       onClick={() => {
         onInteractOutside?.();
@@ -59,7 +59,7 @@ export function DialogContent({ className, children, onInteractOutside }) {
     >
       <div
         className={cn(
-          "w-full max-w-lg rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 text-gray-900 dark:text-white shadow-xl",
+          "my-auto w-full max-w-lg rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 sm:p-6 text-gray-900 dark:text-white shadow-xl",
           className,
         )}
         role="dialog"

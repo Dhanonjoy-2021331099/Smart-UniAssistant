@@ -168,7 +168,7 @@ const NotificationsMenu = ({ user }) => {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-80 sm:w-96 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg">
+        <div className="fixed inset-x-4 top-16 z-50 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg sm:absolute sm:inset-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-96">
           <div className="flex items-center justify-between gap-2 border-b border-gray-200 dark:border-gray-800 px-4 py-3">
             <p className="text-sm font-semibold text-gray-900 dark:text-white">
               Notifications

@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getDashboardPath } from '../../utils/navigation';
 import { cn } from '../../lib/utils';
 
-const Sidebar = () => {
+const Sidebar = ({ open = false, onClose }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
 
@@ -53,7 +53,15 @@ const Sidebar = () => {
   const menuItems = getMenuItems();
 
   return (
-    <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 h-screen sticky top-0 flex flex-col" data-testid="sidebar">
+    <aside
+      className={cn(
+        'fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 h-screen',
+        'transform transition-transform duration-200 ease-in-out',
+        open ? 'translate-x-0' : '-translate-x-full',
+        'lg:static lg:translate-x-0 lg:transform-none lg:h-screen'
+      )}
+      data-testid="sidebar"
+    >
       <div className="p-6 border-b border-gray-200 dark:border-gray-800">
         <Link to={getDashboardPath(user?.role)} className="flex items-center space-x-2" data-testid="logo-link">
           <GraduationCap className="w-8 h-8 text-blue-600" />
@@ -74,6 +82,7 @@ const Sidebar = () => {
               <li key={item.path}>
                 <Link
                   to={item.path}
+                  onClick={onClose}
                   data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                   className={cn(
                     'flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200',
@@ -93,7 +102,10 @@ const Sidebar = () => {
 
       <div className="p-4 border-t border-gray-200 dark:border-gray-800">
         <button
-          onClick={logout}
+          onClick={() => {
+            onClose();
+            logout();
+          }}
           data-testid="logout-button"
           className="flex items-center space-x-3 px-4 py-3 w-full rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
         >
