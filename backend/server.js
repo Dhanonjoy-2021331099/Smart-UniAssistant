@@ -4,6 +4,7 @@ import morgan from "morgan";
 import dotenv from "dotenv";
 import { createServer } from "http";
 import connectDB from "./config/db.js";
+import { validateEnv } from "./config/validateEnv.js";
 import { initSocket } from "./config/socket.js";
 import { LOCAL_UPLOAD_DIR } from "./config/storage.js";
 
@@ -26,6 +27,7 @@ import departmentRoutes from "./routes/department.routes.js";
 import batchRoutes from "./routes/batch.routes.js";
 
 dotenv.config();
+validateEnv();
 
 const app = express();
 const httpServer = createServer(app);
@@ -119,7 +121,7 @@ async function startServer() {
     initSocket(httpServer);
 
     httpServer.listen(PORT, "0.0.0.0", () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
+      console.log(`🚀 Server listening on port ${PORT}`);
     });
   } catch (error) {
     console.error("❌ Failed to start server:", error);

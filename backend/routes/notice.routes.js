@@ -1,10 +1,10 @@
 import express from "express";
 import multer from "multer";
-import authenticate from "../middleware/auth.middleware.js";
+import authenticate from "../middleware/auth.js";
 import {
   requireNoticeManager,
   requireNoticeViewer,
-} from "../middleware/role.middleware.js";
+} from "../middleware/rbac.js";
 import { sendError } from "../utils/apiResponse.js";
 import { MAX_ATTACHMENT_SIZE } from "../config/storage.js";
 import {

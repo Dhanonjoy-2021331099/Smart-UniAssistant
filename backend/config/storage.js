@@ -1,66 +1,46 @@
-import axios from 'axios';
-import { promises as fs } from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import AppError from '../utils/AppError.js';
+import { promises as fs } from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import cloudinary from "./cloudinary.js";
+import AppError from "../utils/AppError.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export const LOCAL_UPLOAD_DIR = path.resolve(__dirname, '..', 'uploads');
+export const LOCAL_UPLOAD_DIR = path.resolve(__dirname, "..", "uploads");
 
-const STORAGE_URL =
-  process.env.STORAGE_URL ||
-  'https://integrations.emergentagent.com/objstore/api/v1/storage';
-const EMERGENT_KEY = process.env.EMERGENT_LLM_KEY;
-const APP_NAME = process.env.APP_NAME || 'smart-uniassistant';
+const APP_NAME = process.env.APP_NAME || "smart-uniassistant";
 
 export const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
 export const ALLOWED_ATTACHMENT_MIMES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/gif',
-  'application/pdf',
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "application/pdf",
 ]);
 export const ALLOWED_ATTACHMENT_EXTENSIONS = new Set([
-  '.jpg',
-  '.jpeg',
-  '.png',
-  '.webp',
-  '.gif',
-  '.pdf',
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
+  ".gif",
+  ".pdf",
 ]);
 
-const MIME_BY_EXT = {
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.png': 'image/png',
-  '.webp': 'image/webp',
-  '.gif': 'image/gif',
-  '.pdf': 'application/pdf',
-};
-
-let storageKey = null;
-let useLocal = false;
-
-const hasValidEmergentKey = () =>
+const hasValidCloudinaryConfig = () =>
   Boolean(
-    EMERGENT_KEY &&
-      !EMERGENT_KEY.includes('xxxxx') &&
-      EMERGENT_KEY.startsWith('sk-'),
+    process.env.CLOUDINARY_CLOUD_NAME &&
+      process.env.CLOUDINARY_API_KEY &&
+      process.env.CLOUDINARY_API_SECRET,
   );
-
-const ensureLocalDir = async () => {
-  await fs.mkdir(LOCAL_UPLOAD_DIR, { recursive: true });
-};
 
 export const validateAttachmentFile = (file) => {
   if (!file) {
     return;
   }
 
-  const ext = path.extname(file.originalname || '').toLowerCase();
+  const ext = path.extname(file.originalname || "").toLowerCase();
 
   if (
     !ALLOWED_ATTACHMENT_MIMES.has(file.mimetype) &&
@@ -81,114 +61,94 @@ export const validateAttachmentFile = (file) => {
 };
 
 export const initStorage = async () => {
-  if (storageKey) return storageKey;
-
-  if (useLocal) {
-    await ensureLocalDir();
-    return null;
+  if (!hasValidCloudinaryConfig()) {
+    throw new AppError(
+      "Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET.",
+      500,
+    );
   }
 
-  if (!hasValidEmergentKey()) {
-    useLocal = true;
-    await ensureLocalDir();
-    console.warn(
-      '⚠️ No valid EMERGENT_LLM_KEY configured. Using local file storage.',
-    );
-    return null;
-  }
-
-  try {
-    const response = await axios.post(
-      `${STORAGE_URL}/init`,
-      { emergent_key: EMERGENT_KEY },
-      { timeout: 30000 }
-    );
-
-    storageKey = response.data.storage_key;
-    console.log('✅ Object Storage initialized');
-    return storageKey;
-  } catch (error) {
-    useLocal = true;
-    await ensureLocalDir();
-    console.warn(
-      '⚠️ Object storage unavailable, falling back to local file storage:',
-      error.message,
-    );
-    return null;
-  }
+  return true;
 };
 
-const uploadToLocal = async (relativePath, data) => {
-  const absolutePath = path.join(LOCAL_UPLOAD_DIR, relativePath);
-  await fs.mkdir(path.dirname(absolutePath), { recursive: true });
-  await fs.writeFile(absolutePath, data);
-  return { url: `/uploads/${relativePath.replace(/\\/g, '/')}` };
-};
+const uploadToCloudinary = (publicId, data) =>
+  new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        public_id: publicId,
+        resource_type: "auto",
+        overwrite: true,
+        use_filename: false,
+        unique_filename: false,
+      },
+      (error, result) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve({
+          url: result.secure_url,
+          path: result.public_id,
+          size: result.bytes,
+        });
+      },
+    );
+
+    stream.end(data);
+  });
 
 export const uploadFile = async (relativePath, data, contentType) => {
-  const key = await initStorage();
+  await initStorage();
 
-  if (!key) {
-    return uploadToLocal(relativePath, data);
-  }
-
-  try {
-    const response = await axios.put(
-      `${STORAGE_URL}/objects/${relativePath}`,
-      data,
-      {
-        headers: {
-          'X-Storage-Key': key,
-          'Content-Type': contentType,
-        },
-        timeout: 120000,
-      }
-    );
-
-    return response.data;
-  } catch (error) {
-    console.warn(
-      '⚠️ Object storage upload failed, falling back to local file storage:',
-      error.message,
-    );
-    return uploadToLocal(relativePath, data);
-  }
+  const publicId = relativePath.replace(/\\/g, "/");
+  return uploadToCloudinary(publicId, data);
 };
 
 export const downloadFile = async (relativePath) => {
-  const key = await initStorage();
+  await initStorage();
 
-  if (!key) {
+  const normalized = relativePath.replace(/\\/g, "/");
+
+  if (/^https?:\/\//i.test(normalized)) {
+    return { url: normalized };
+  }
+
+  const url = await resolveAssetUrl(normalized);
+
+  if (!url) {
+    throw new AppError("File not found in storage", 404);
+  }
+
+  return { url };
+};
+
+const resolveAssetUrl = async (publicId) => {
+  for (const resourceType of ["image", "raw"]) {
     try {
-      const absolutePath = path.join(LOCAL_UPLOAD_DIR, relativePath);
-      const data = await fs.readFile(absolutePath);
-      const ext = path.extname(relativePath).toLowerCase();
-      const contentType =
-        MIME_BY_EXT[ext] || 'application/octet-stream';
+      const resource = await cloudinary.api.resource(publicId, {
+        resource_type: resourceType,
+      });
 
-      return { data, contentType };
+      return resource.secure_url;
     } catch (error) {
-      throw new Error(`Download failed: ${error.message}`);
+      const code = error?.http_code ?? error?.error?.http_code ?? error?.status;
+
+      if (code !== 404) {
+        throw error;
+      }
     }
   }
 
-  try {
-    const response = await axios.get(
-      `${STORAGE_URL}/objects/${relativePath}`,
-      {
-        headers: { 'X-Storage-Key': key },
-        responseType: 'arraybuffer',
-        timeout: 60000,
-      }
-    );
+  return null;
+};
 
-    return {
-      data: response.data,
-      contentType: response.headers['content-type'] || 'application/octet-stream',
-    };
-  } catch (error) {
-    throw new Error(`Download failed: ${error.message}`);
+export const withAttachmentFlag = (url) => {
+  if (!url || url.includes("/fl_attachment/")) {
+    return url;
   }
+
+  return url.replace("/upload/", "/upload/fl_attachment/");
 };
 
 export const generateFilePath = (userId, filename) => {
@@ -198,42 +158,36 @@ export const generateFilePath = (userId, filename) => {
   return `${APP_NAME}/uploads/${userId}/${uniqueName}`;
 };
 
-const deleteFromLocal = async (relativePath) => {
-  const absolutePath = path.join(LOCAL_UPLOAD_DIR, relativePath);
-  await fs.unlink(absolutePath);
-};
-
 export const deleteFile = async (relativePath) => {
   if (!relativePath) {
     return;
   }
 
-  const key = await initStorage();
+  await initStorage();
 
-  if (!key) {
-    try {
-      await deleteFromLocal(relativePath);
-    } catch (error) {
-      console.warn(
-        '⚠️ Could not delete local file (may already be missing):',
-        error.message,
-      );
-    }
+  const normalized = relativePath.replace(/\\/g, "/");
+
+  if (/^https?:\/\//i.test(normalized)) {
     return;
   }
 
   try {
-    await axios.delete(`${STORAGE_URL}/objects/${relativePath}`, {
-      headers: { 'X-Storage-Key': key },
-      timeout: 30000,
-    });
+    await cloudinary.uploader.destroy(normalized);
   } catch (error) {
     console.warn(
-      '⚠️ Object storage delete failed (file may not exist remotely):',
+      "⚠️ Cloudinary delete failed (resource may already be missing):",
       error.message,
     );
   }
 };
 
 export const getUploadUrl = (uploaded, relativePath) =>
-  uploaded?.url || uploaded?.public_url || uploaded?.path || `/uploads/${relativePath.replace(/\\/g, '/')}`;
+  uploaded?.url ||
+  uploaded?.public_url ||
+  uploaded?.path ||
+  `/uploads/${relativePath.replace(/\\/g, "/")}`;
+
+// Legacy local-fallback cleanup retained for dev environments only.
+export const ensureLocalDir = async () => {
+  await fs.mkdir(LOCAL_UPLOAD_DIR, { recursive: true });
+};

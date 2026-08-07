@@ -28,20 +28,21 @@ export const submitAssignment = async (req, res) => {
       for (const file of req.files) {
         const path = generateFilePath(req.user._id.toString(), file.originalname);
         const result = await uploadFile(path, file.buffer, file.mimetype);
-        
+        const storagePath = result?.path || path;
+
         await File.create({
           originalFileName: file.originalname,
-          storagePath: result.path,
+          storagePath,
           contentType: file.mimetype,
-          size: result.size,
+          size: result?.size ?? file.size,
           uploadedBy: req.user._id,
           relatedModel: 'Submission'
         });
-        
+
         files.push({
           fileName: file.originalname,
-          filePath: result.path,
-          fileSize: result.size,
+          filePath: storagePath,
+          fileSize: result?.size ?? file.size,
           fileType: file.mimetype
         });
       }

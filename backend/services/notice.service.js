@@ -3,6 +3,7 @@ import Notice from "../models/Notice.js";
 import AppError from "../utils/AppError.js";
 import {
   uploadFile,
+  deleteFile,
   generateFilePath,
   validateAttachmentFile,
   getUploadUrl,
@@ -143,6 +144,7 @@ const buildAttachmentsFromFiles = async (userId, files) => {
     attachments.push({
       fileName: file.originalname,
       fileUrl: getUploadUrl(uploaded, relativePath),
+      filePath: uploaded?.path || relativePath,
       fileSize: file.size,
     });
   }
@@ -334,6 +336,10 @@ export const updateNoticeRecord = async (user, noticeId, body, files) => {
       index < currentAttachments.length,
   );
 
+  const removedAttachments = currentAttachments.filter(
+    (_, index) => !validKeptIndexes.includes(index),
+  );
+
   notice.attachments = currentAttachments.filter((_, index) =>
     validKeptIndexes.includes(index),
   );
@@ -345,6 +351,18 @@ export const updateNoticeRecord = async (user, noticeId, body, files) => {
   if (Array.isArray(files) && files.length > 0) {
     const uploaded = await buildAttachmentsFromFiles(user._id, files);
     notice.attachments.push(...uploaded);
+  }
+
+  if (removedAttachments.length > 0) {
+    await Promise.allSettled(
+      removedAttachments.map((attachment) => {
+        if (attachment?.filePath) {
+          return deleteFile(attachment.filePath);
+        }
+
+        return Promise.resolve();
+      }),
+    );
   }
 
   try {
@@ -372,7 +390,22 @@ export const deleteNoticeRecord = async (user, noticeId) => {
     throw new AppError("You can only delete your own notices", 403);
   }
 
+  const attachments = Array.isArray(notice.attachments) && notice.attachments.length > 0
+    ? notice.attachments
+    : notice.attachment
+      ? [notice.attachment]
+      : [];
+
   await notice.deleteOne();
+
+  const filePaths = attachments
+    .map((attachment) => attachment?.filePath)
+    .filter(Boolean);
+
+  if (filePaths.length > 0) {
+    await Promise.allSettled(filePaths.map((filePath) => deleteFile(filePath)));
+  }
+
   return notice;
 };
 

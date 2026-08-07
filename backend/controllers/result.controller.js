@@ -15,6 +15,7 @@ import {
   getStudentResults,
   downloadResultFile,
 } from '../services/results.service.js';
+import { withAttachmentFlag } from '../config/storage.js';
 import { sendSuccess, sendError } from '../utils/apiResponse.js';
 
 const statusOf = (error) => error.statusCode || error.status || 500;
@@ -164,19 +165,23 @@ export const myResults = async (req, res) => {
 
 export const download = async (req, res) => {
   try {
-    const { data, contentType, fileName } = await downloadResultFile(
+    const { url, data, contentType, fileName } = await downloadResultFile(
       req.user,
       req.params.resultId,
     );
 
-    res.setHeader('Content-Type', contentType || 'application/octet-stream');
+    if (url) {
+      return res.redirect(withAttachmentFlag(url));
+    }
+
+    res.setHeader("Content-Type", contentType || "application/octet-stream");
     res.setHeader(
-      'Content-Disposition',
+      "Content-Disposition",
       `attachment; filename="${fileName}"`,
     );
 
     return res.send(data);
   } catch (error) {
-    return sendError(res, statusOf(error), error.message || 'Failed to download file');
+    return sendError(res, statusOf(error), error.message || "Failed to download file");
   }
 };

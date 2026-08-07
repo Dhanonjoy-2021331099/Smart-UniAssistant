@@ -4,6 +4,7 @@ const attachmentSchema = new mongoose.Schema(
   {
     fileName: { type: String, required: true },
     fileUrl: { type: String, required: true },
+    filePath: { type: String },
     fileSize: { type: Number },
   },
   { _id: false },

@@ -3,6 +3,7 @@ import Result, { RESULT_TYPES, RESULT_TYPE_LABELS } from '../models/Result.js';
 import Student from '../models/Student.js';
 import Teacher from '../models/Teacher.js';
 import TeacherCourse from '../models/TeacherCourse.js';
+import Course from '../models/Course.js';
 import User from '../models/User.js';
 import File from '../models/File.js';
 import AppError from '../utils/AppError.js';
@@ -120,7 +121,19 @@ const resolveEnrolledStudents = async (assignment) => {
   );
 };
 
-const buildResultUpdate = ({
+const resolveCourseByCode = async (courseCode) => {
+  if (!courseCode) {
+    return null;
+  }
+
+  const course = await Course.findOne({ code: courseCode })
+    .select('_id')
+    .lean();
+
+  return course?._id || null;
+};
+
+const buildResultUpdate = async ({
   teacher,
   teacherName,
   assignment,
@@ -139,10 +152,12 @@ const buildResultUpdate = ({
   const departmentCode =
     resolveDepartmentCode(assignment.department) ||
     String(assignment.department || '');
+  const course = await resolveCourseByCode(assignment.courseCode);
 
   return {
     student: student._id,
     teacherCourseId: assignment._id,
+    course,
     department: departmentCode,
     departmentName: assignment.departmentName || assignment.department || '',
     semester: String(assignment.semester || ''),
@@ -288,7 +303,7 @@ const upsertCourseResults = async ({
   for (const { entry, student } of targets) {
     const studentName = userCache.get(student.userId?.toString()) || '';
 
-    const update = buildResultUpdate({
+    const update = await buildResultUpdate({
       teacher,
       teacherName,
       assignment,
@@ -407,7 +422,7 @@ export const createOrUpdateResult = async (user, payload) => {
   const studentName = userCache.get(student.userId?.toString()) || '';
   const teacherName = await resolveTeacherName(teacher);
 
-  const update = buildResultUpdate({
+  const update = await buildResultUpdate({
     teacher,
     teacherName,
     assignment,
@@ -1297,7 +1312,16 @@ export const downloadResultFile = async (user, resultId) => {
     throw new AppError('No file attached to this result', 404);
   }
 
-  const { data, contentType } = await downloadFile(result.fileUrl);
+  const { url, data, contentType } = await downloadFile(result.fileUrl);
+
+  if (url) {
+    return {
+      url,
+      data: null,
+      contentType,
+      fileName: result.fileName || 'result-download',
+    };
+  }
 
   return {
     data,

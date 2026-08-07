@@ -3,6 +3,14 @@ import Routine from "../models/Routine.js";
 import Notice from "../models/Notice.js";
 import Event from "../models/Event.js";
 import Resource from "../models/Resource.js";
+import {
+  uploadFile,
+  generateFilePath,
+  getUploadUrl,
+  validateAttachmentFile,
+} from "../config/storage.js";
+
+const statusOf = (error) => error.statusCode || error.status || 500;
 
 export const getDashboard = async (req, res) => {
   try {
@@ -96,7 +104,7 @@ export const uploadResource = async (req, res) => {
     }
     const { title, description, type, category, externalLink, tags } = req.body;
 
-    const resource = await Resource.create({
+    const resourceData = {
       title,
       description,
       type,
@@ -106,11 +114,33 @@ export const uploadResource = async (req, res) => {
       batch: crAdmin.batch,
       department: crAdmin.department,
       uploadedBy: req.user._id,
-    });
+    };
+
+    if (req.file) {
+      validateAttachmentFile(req.file);
+
+      const relativePath = generateFilePath(req.user._id, req.file.originalname);
+      const uploaded = await uploadFile(
+        relativePath,
+        req.file.buffer,
+        req.file.mimetype,
+      );
+
+      resourceData.fileUrl = getUploadUrl(uploaded, relativePath);
+      resourceData.filePath = uploaded?.path || relativePath;
+      resourceData.fileName = req.file.originalname;
+      resourceData.fileSize = req.file.size;
+    } else if (!externalLink) {
+      return res
+        .status(400)
+        .json({ error: "A file or an external link is required" });
+    }
+
+    const resource = await Resource.create(resourceData);
 
     res.status(201).json(resource);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(statusOf(error)).json({ error: error.message });
   }
 };
 

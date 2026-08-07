@@ -17,12 +17,25 @@ export const requireRole = (...allowedRoles) => {
 export const requireStudent = requireRole("student");
 export const requireTeacher = requireRole("teacher");
 export const requireCRAdmin = requireRole("cr_admin");
-export const requireAnyRole = requireRole("student", "teacher", "cr_admin");
+export const requireSuperAdmin = requireRole("super_admin");
+export const requireNoticeManager = requireRole(
+  "super_admin",
+  "cr_admin",
+  "teacher",
+);
+export const requireNoticeViewer = requireRole(
+  "student",
+  "teacher",
+  "cr_admin",
+  "super_admin",
+);
 
 export default {
   requireRole,
   requireStudent,
   requireTeacher,
   requireCRAdmin,
-  requireAnyRole,
+  requireSuperAdmin,
+  requireNoticeManager,
+  requireNoticeViewer,
 };

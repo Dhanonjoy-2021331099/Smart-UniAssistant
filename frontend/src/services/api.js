@@ -56,11 +56,6 @@ export const getProfile = async () => {
   return unwrapResponse(data);
 };
 
-export const completeProfile = async (profileData) => {
-  const { data } = await api.post("/api/auth/complete-profile", profileData);
-  return unwrapResponse(data);
-};
-
 export const getDepartments = async () => {
   const { data } = await api.get("/api/departments");
   return unwrapResponse(data);
@@ -78,25 +73,8 @@ export const getStudentDashboard = async () => {
   return data;
 };
 
-export const getStudentResults = async () => {
-  const { data } = await api.get("/api/students/results");
-  return data;
-};
-
 export const getStudentAssignments = async () => {
   const { data } = await api.get("/api/students/assignments");
-  return data;
-};
-
-export const getCourseMaterials = async (courseId) => {
-  const { data } = await api.get("/api/students/materials", {
-    params: { courseId },
-  });
-  return data;
-};
-
-export const calculateCGPA = async () => {
-  const { data } = await api.get("/api/students/calculate-cgpa");
   return data;
 };
 
@@ -112,90 +90,8 @@ export const getTeacherDashboard = async () => {
   return data;
 };
 
-export const getTeacherCourses = async () => {
-  const { data } = await api.get("/api/teachers/courses");
-  return data?.data ?? data;
-};
-
-export const uploadCourseMaterial = async (formData) => {
-  const { data } = await api.post("/api/teachers/materials", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-  return data;
-};
-
-export const createAssignment = async (assignmentData) => {
-  const { data } = await api.post("/api/teachers/assignments", assignmentData);
-  return data;
-};
-
-export const getAssignmentSubmissions = async (assignmentId) => {
-  const { data } = await api.get(
-    `/api/teachers/assignments/${assignmentId}/submissions`,
-  );
-  return data;
-};
-
-export const gradeSubmission = async (submissionId, gradeData) => {
-  const { data } = await api.put(
-    `/api/teachers/submissions/${submissionId}/grade`,
-    gradeData,
-  );
-  return data;
-};
-
-export const uploadResults = async (resultsData) => {
-  const { data } = await api.post("/api/teachers/results", resultsData);
-  return data;
-};
-
 export const getCRAdminDashboard = async () => {
   const { data } = await api.get("/api/cradmin/dashboard");
-  return data;
-};
-
-export const createNotice = async (noticeData) => {
-  const { data } = await api.post("/api/cradmin/notices", noticeData);
-  return data;
-};
-
-export const createEvent = async (eventData) => {
-  const { data } = await api.post("/api/cradmin/events", eventData);
-  return data;
-};
-
-export const manageRoutine = async (routineData) => {
-  const { data } = await api.post("/api/cradmin/routines", routineData);
-  return data;
-};
-
-export const getCourses = async (params) => {
-  const { data } = await api.get("/api/courses", { params });
-  return data;
-};
-
-export const getNotices = async (params) => {
-  const { data } = await api.get("/api/notices", { params });
-  return data;
-};
-
-export const getEvents = async (params) => {
-  const { data } = await api.get("/api/events", { params });
-  return data;
-};
-
-export const getResources = async (params) => {
-  const { data } = await api.get("/api/resources", { params });
-  return data;
-};
-
-export const getRoutines = async (params) => {
-  const { data } = await api.get("/api/routines", { params });
-  return data;
-};
-
-export const getQuestionBank = async (params) => {
-  const { data } = await api.get("/api/questionbanks", { params });
   return data;
 };
 

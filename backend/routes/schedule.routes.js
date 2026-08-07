@@ -1,6 +1,6 @@
 import express from "express";
-import authenticate from "../middleware/auth.middleware.js";
-import { requireRole } from "../middleware/role.middleware.js";
+import authenticate from "../middleware/auth.js";
+import { requireRole } from "../middleware/rbac.js";
 import {
   getRoutine,
   saveWeeklyRoutine,

@@ -1,6 +1,7 @@
 import Teacher from '../models/Teacher.js';
 import TeacherCourse from '../models/TeacherCourse.js';
 import Student from '../models/Student.js';
+import Course from '../models/Course.js';
 import CourseMaterial from '../models/CourseMaterial.js';
 import Assignment from '../models/Assignment.js';
 import Submission from '../models/Submission.js';
@@ -38,6 +39,18 @@ const assertAssigned = async (teacher, teacherCourseId) => {
   return teacherCourse;
 };
 
+export const resolveCourseByCode = async (courseCode) => {
+  if (!courseCode) {
+    return null;
+  }
+
+  const course = await Course.findOne({ code: courseCode })
+    .select('_id')
+    .lean();
+
+  return course?._id || null;
+};
+
 export const uploadCourseMaterial = async (user, payload, file) => {
   const teacher = await findTeacher(user._id);
   const { teacherCourseId, title, description, type, externalLink } = payload;
@@ -50,7 +63,8 @@ export const uploadCourseMaterial = async (user, payload, file) => {
     throw new AppError('Title and type are required', 400);
   }
 
-  await assertAssigned(teacher, teacherCourseId);
+  const teacherCourse = await assertAssigned(teacher, teacherCourseId);
+  const course = await resolveCourseByCode(teacherCourse.courseCode);
 
   let filePath = null;
   let fileName = null;
@@ -77,6 +91,7 @@ export const uploadCourseMaterial = async (user, payload, file) => {
 
   return CourseMaterial.create({
     teacherCourseId,
+    course,
     teacher: teacher._id,
     title,
     description,
@@ -110,10 +125,12 @@ export const createAssignment = async (user, payload) => {
     throw new AppError('Title, max marks and due date are required', 400);
   }
 
-  await assertAssigned(teacher, teacherCourseId);
+  const teacherCourse = await assertAssigned(teacher, teacherCourseId);
+  const course = await resolveCourseByCode(teacherCourse.courseCode);
 
   return Assignment.create({
     teacherCourseId,
+    course,
     teacher: teacher._id,
     title,
     description,
@@ -285,6 +302,7 @@ export default {
   getAssignmentSubmissions,
   gradeSubmission,
   resolveStudentTeacherCourseIds,
+  resolveCourseByCode,
   attachCourseView,
   listMaterialsForStudent,
   listAssignmentsForStudent,
